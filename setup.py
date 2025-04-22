@@ -1,10 +1,16 @@
 from setuptools import setup, find_packages
 
+# Helper function to read requirements.txt
+def load_requirements(filename):
+    with open(filename) as f:
+        return f.read().splitlines()
+
 setup(
     name="gOS-api-sdk",
     version="0.1.0",
     packages=find_packages(),
-    install_requires=[],
+    install_requires=load_requirements("requirements.txt"),
+    include_package_data=True,
     author="Team Implementaion",
     author_email="implementation@polyteia.com",
     description="Python SDK for the gOS reporting dashboard API",
