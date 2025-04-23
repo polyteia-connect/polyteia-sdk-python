@@ -1,9 +1,44 @@
+# Byte-compiled / optimized / DLL files
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
-*.egg-info/
-dist/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
 build/
-.venv/
+dist/
+*.egg-info/
+.eggs/
+*.egg
+
+# Installer logs
+pip-log.txt
+
+# Virtual environments
 .env
+.venv
+venv/
+ENV/
+
+# IDEs and editors
+.vscode/
+.idea/
+
+# macOS
+.DS_Store
+
+# Test and type-check cache
+.pytest_cache/
+.mypy_cache/
+.coverage
+.cache/
+coverage.xml
+htmlcov/
+
+# PEP 582
+__pypackages__/
+
+# Versioning tools
+.bumpversion.cfg
+
+# CI/CD
+*.log
