@@ -25,11 +25,13 @@ jobs:
         run: |
           pip install -r dev-requirements.txt
 
-      - name: Bump patch version
-        run: bump-my-version bump patch
-
-      - name: Commit and push version bump
+      - name: Configure Git identity
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git push origin main --follow-tags
+
+      - name: Bump patch version
+        run: bump-my-version bump patch
+
+      - name: Push version bump
+        run: git push origin main --follow-tags
