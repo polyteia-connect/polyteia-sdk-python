@@ -4,18 +4,19 @@ import time as timer
 import requests
 import pyarrow.parquet as pq
 import polars as pl
-from get_env import API_URL, PAK
+
+DEFAULT_API_URL = "https://dev.polyteia.com"
 
 
 def hello_world():
     return "Hello, world from gOS-api-sdk!"
 
 
-
-def get_org_access_token(org_id: str) -> str:
+def get_org_access_token(org_id: str, PAK: str, API_URL: str = DEFAULT_API_URL) -> str:
     """
     Get access token for organization.
     """
+
     token_payload = {
             "organization_id": org_id,
         }
@@ -34,13 +35,14 @@ def get_org_access_token(org_id: str) -> str:
     return access_token
 
 
-def update_dataset(ds_id: str, access_token: str, **kwargs) -> None:
+def update_dataset(ds_id: str, access_token: str, API_URL: str = DEFAULT_API_URL, **kwargs) -> None:
+
     headers = {
         "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json"
     }
     
-    current_dataset = get_dataset_by_id(ds_id, access_token)["data"]
+    current_dataset = get_dataset_by_id(ds_id, access_token, API_URL)["data"]
     
     params = {
         "id": ds_id,
@@ -66,9 +68,8 @@ def update_dataset(ds_id: str, access_token: str, **kwargs) -> None:
     if update_response.status_code not in [200, 201]:
         raise Exception(f"Failed to update dataset: {update_response.text}")
 
-    
 
-def create_dataset(solution_id: str, name: str, description: str, source: str, slug: str, access_token: str, documentation: Optional[dict]= None) -> str:
+def create_dataset(solution_id: str, name: str, description: str, source: str, slug: str, access_token: str, documentation: Optional[dict] = None, API_URL: str = DEFAULT_API_URL) -> str:
     """
     Create a dataset.
     """
@@ -105,7 +106,7 @@ def create_dataset(solution_id: str, name: str, description: str, source: str, s
     return response.json()["data"]["id"]
 
 
-def generate_upload_token(ds_id: str, content_type: str, access_token: str) -> str:
+def generate_upload_token(ds_id: str, content_type: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> str:
     """
     Generate an upload token.
     """
@@ -130,7 +131,7 @@ def generate_upload_token(ds_id: str, content_type: str, access_token: str) -> s
     
     return response.json()["data"]["token"]
 
-def upload_file(upload_token: str, df: pl.DataFrame, access_token: str) -> None:
+def upload_file(upload_token: str, df: pl.DataFrame, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
     """
     Upload a file to the dataset.
     """
@@ -165,7 +166,7 @@ def upload_file(upload_token: str, df: pl.DataFrame, access_token: str) -> None:
     return None
 
 
-def create_insight(insight_body: dict, access_token: str) -> str:
+def create_insight(insight_body: dict, access_token: str, API_URL: str = DEFAULT_API_URL) -> str:
     """
     Create an insight.
     """
@@ -191,7 +192,7 @@ def create_insight(insight_body: dict, access_token: str) -> str:
     return response.json()
 
 
-def update_insight(insight_id: str, insight_body: dict, access_token: str) -> None:
+def update_insight(insight_id: str, insight_body: dict, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
     """
     Update an insight.
     """
@@ -220,32 +221,46 @@ def update_insight(insight_id: str, insight_body: dict, access_token: str) -> No
         raise Exception(f"Failed to update insight: {response.text}")
     
 
-def get_org_id(client_id: str, mandant: str) -> str:
+def get_org_id(client_id: str, mandant: str, API_URL: str = DEFAULT_API_URL) -> str:
     # use static mapping
     return("Not implemented")
 
 
-def get_solution_id(org_id: str) -> str:
+def get_solution_id(org_id: str, API_URL: str = DEFAULT_API_URL) -> str:
     # use static mapping
     return("Not implemented")
 
 
-def get_or_create_dataset(solution_id: str, name: str, description: str, source: str, slug: str, access_token: str, documentation: Optional[dict]= None) -> str:
+def get_or_create_dataset(
+                        solution_id: str,
+                        name: str,
+                        description: str,
+                        source: str,
+                        slug: str,
+                        access_token: str,
+                        documentation: Optional[dict] = None,
+                        API_URL: str = DEFAULT_API_URL
+                    ) -> str:
+
     try:
-        ds = get_dataset_by_slug(solution_id, slug, access_token)
+        ds = get_dataset_by_slug(solution_id, slug, access_token, API_URL)
         ds_id = ds["data"]["id"]
     except Exception:
-        ds_id = create_dataset(solution_id, name, description, source, slug, access_token, documentation = documentation)
+        ds_id = create_dataset(solution_id, name, description, source, slug, access_token, documentation = documentation, API_URL = API_URL)
     
     return ds_id
     
 
-def list_resources(container_id: str, 
-                    access_token: str,
-                    ressource_type: str = "dataset", 
-                    page_nr: int = 1, 
-                    page_size: int = 100,
-                    permission: str = "can_edit") -> dict:
+def list_resources(
+                container_id: str,
+                access_token: str,
+                ressource_type: str = "dataset",
+                page_nr: int = 1,
+                page_size: int = 100,
+                permission: str = "can_edit",
+                API_URL: str = DEFAULT_API_URL
+            ) -> dict:
+    
     headers = {
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json"
@@ -277,13 +292,20 @@ def list_resources(container_id: str,
 
     return response.json()
 
-def list_resources_recursive(container_id: str, access_token: str, ressource_type: str = "dataset", permission: str = "can_edit") -> List[str]:
+def list_resources_recursive(
+                            container_id: str,
+                            access_token: str,
+                            ressource_type: str = "dataset",
+                            permission: str = "can_edit",
+                            API_URL: str = DEFAULT_API_URL
+                        ) -> List[str]:
+
     page_nr = 1
     page_size = 100
     resources = []
     
     while True:
-        response = list_resources(container_id, access_token, ressource_type, page_nr, page_size, permission)
+        response = list_resources(container_id, access_token, ressource_type, page_nr, page_size, permission, API_URL)
         resources.extend(response["data"]["items"])
         page_nr += 1
         timer.sleep(0.2)
@@ -292,7 +314,9 @@ def list_resources_recursive(container_id: str, access_token: str, ressource_typ
     
     return resources
 
-def get_dataset_by_id(dataset_id: str, access_token: str) -> dict:
+
+def get_dataset_by_id(dataset_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
+
     headers = {
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json"
@@ -316,7 +340,8 @@ def get_dataset_by_id(dataset_id: str, access_token: str) -> dict:
     
     return response.json()
 
-def get_dataset_by_slug(solution_id: str, slug: str, access_token: str) -> dict:
+def get_dataset_by_slug(solution_id: str, slug: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
+
     headers = {
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json"
@@ -341,13 +366,17 @@ def get_dataset_by_slug(solution_id: str, slug: str, access_token: str) -> dict:
     
     return response.json()
 
-def get_all_datasets_in_sol(sol_id: str, access_token: str) -> List[dict]:
-    ds_ids = list_resources_recursive(sol_id, access_token)
-    datasets = [get_dataset_by_id(ds_id, access_token) for ds_id in ds_ids]
+
+def get_all_datasets_in_sol(sol_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> List[dict]:
+
+    ds_ids = list_resources_recursive(sol_id, access_token, API_URL = API_URL)
+    datasets = [get_dataset_by_id(ds_id, access_token, API_URL) for ds_id in ds_ids]
     datasets = [ds["data"] for ds in datasets]
     return datasets
 
-def create_tag(org_id: str, name: str, description: str, access_token: str, color: str = "#1F009D") -> str:
+
+def create_tag(org_id: str, name: str, description: str, access_token: str, color: str = "#1F009D", API_URL: str = DEFAULT_API_URL) -> str:
+
     headers = {
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json"
@@ -374,7 +403,9 @@ def create_tag(org_id: str, name: str, description: str, access_token: str, colo
     
     return response.json()["data"]["id"]
 
-def search_tags(org_id: str, access_token: str, search: str, page: int = 1, size: int = 100) -> List[dict]:
+
+def search_tags(org_id: str, access_token: str, search: str, page: int = 1, size: int = 100, API_URL: str = DEFAULT_API_URL) -> List[dict]:
+    
     headers = {
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json"
@@ -401,7 +432,9 @@ def search_tags(org_id: str, access_token: str, search: str, page: int = 1, size
     
     return response.json()["data"]["items"]
 
-def add_tag_to_ressource(tag_id: str, ressource_id: str, access_token: str) -> None:
+
+def add_tag_to_ressource(tag_id: str, ressource_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
+    
     headers = {
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json"
@@ -424,7 +457,9 @@ def add_tag_to_ressource(tag_id: str, ressource_id: str, access_token: str) -> N
     if response.status_code not in [200, 201]:
         raise Exception(f"Failed to add tag to resource: {response.text}")
     
-def get_insight(insight_id: str, access_token: str) -> dict:
+
+def get_insight(insight_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
+    
     headers = {
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json"
@@ -448,13 +483,15 @@ def get_insight(insight_id: str, access_token: str) -> dict:
     
     return response.json()
 
-def find_insight_by_kpi_id(kpi_id: str, solution_id: str, access_token: str) -> dict:
+
+def find_insight_by_kpi_id(kpi_id: str, solution_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
+    
     """
     This only works with KKS-specific insight ids and names
     """
-    all_insights = list_resources_recursive(container_id=solution_id, access_token=access_token, ressource_type="insight", permission="can_edit")
+    all_insights = list_resources_recursive(container_id=solution_id, access_token=access_token, ressource_type="insight", permission="can_edit", API_URL = API_URL)
     for insight_id in all_insights:
-        insight = get_insight(insight_id, access_token)
+        insight = get_insight(insight_id, access_token, API_URL)
         insight_kpi_id = insight["data"]["name"].split(" - ")[0]
         if insight_kpi_id == kpi_id:
             return insight
@@ -462,21 +499,23 @@ def find_insight_by_kpi_id(kpi_id: str, solution_id: str, access_token: str) -> 
     raise Exception(f"Insight with KPI id {kpi_id} not found in solution {solution_id}")
 
 
-def create_or_update_insight(insight_body: dict, solution_id: str, kpi_id: str, access_token: str) -> str:
+def create_or_update_insight(insight_body: dict, solution_id: str, kpi_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> str:
+    
     """
     This only works with KKS-specific insight ids and names
     """
     try:
-        insight = find_insight_by_kpi_id(kpi_id, solution_id, access_token)
+        insight = find_insight_by_kpi_id(kpi_id, solution_id, access_token, API_URL)
         insight_id = insight["data"]["id"]
-        update_insight(insight_id, insight_body, access_token)
+        update_insight(insight_id, insight_body, access_token, API_URL)
         return insight_id
     except Exception:
-        insight_id = create_insight(insight_body, access_token)
+        insight_id = create_insight(insight_body, access_token, API_URL)
         return insight_id["data"]["id"]
         
 
-def delete_insight(insight_id: str, access_token: str) -> None:
+def delete_insight(insight_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
+    
     headers = {
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json"
@@ -498,7 +537,9 @@ def delete_insight(insight_id: str, access_token: str) -> None:
     if response.status_code not in [200, 201]:
         raise Exception(f"Failed to delete insight: {response.text}")
 
-def delete_dataset(ds_id: str, access_token: str) -> None:
+
+def delete_dataset(ds_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
+    
     headers = {
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json"
@@ -520,7 +561,9 @@ def delete_dataset(ds_id: str, access_token: str) -> None:
     if response.status_code not in [200, 201]:
         raise Exception(f"Failed to delete dataset: {response.text}")
         
-def list_tags(org_id: str, access_token: str, page: int = 1, size: int = 100, search="") -> dict:
+
+def list_tags(org_id: str, access_token: str, page: int = 1, size: int = 100, search: str = "", API_URL: str = DEFAULT_API_URL) -> dict:
+    
     headers = {
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json"
@@ -547,13 +590,13 @@ def list_tags(org_id: str, access_token: str, page: int = 1, size: int = 100, se
     
     return response.json()
 
-def list_tags_recursive(org_id: str, access_token: str) -> List[str]:
+def list_tags_recursive(org_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> List[str]:
     page_nr = 1
     page_size = 100
     tags = []
     
     while True:
-        response = list_tags(org_id, access_token, page_nr, page_size)
+        response = list_tags(org_id, access_token, page_nr, page_size, API_URL = API_URL)
         tags.extend(response["data"]["items"])
         page_nr += 1
         timer.sleep(0.2)
@@ -562,7 +605,9 @@ def list_tags_recursive(org_id: str, access_token: str) -> List[str]:
     
     return tags
 
-def delete_tag(tag_id: str, access_token: str) -> None:
+
+def delete_tag(tag_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
+    
     headers = {
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json"
@@ -586,7 +631,9 @@ def delete_tag(tag_id: str, access_token: str) -> None:
     
     return response.json()
 
-def get_organisation(org_id: str, access_token: str) -> dict:
+
+def get_organisation(org_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
+    
     headers = {
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json"
@@ -610,7 +657,9 @@ def get_organisation(org_id: str, access_token: str) -> dict:
     
     return response.json()["data"]
 
-def create_org(name: str, description: str, slug: str, access_token: str) -> str:
+
+def create_org(name: str, description: str, slug: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> str:
+    
     headers = {
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json"
@@ -644,7 +693,9 @@ def create_org(name: str, description: str, slug: str, access_token: str) -> str
     
     return response.json()["data"]["id"]
 
-def invite_user_to_org(org_id: str, access_token: str, email: str = "cloud@polyteia.de", role: str = "admin") -> None:
+
+def invite_user_to_org(org_id: str, access_token: str, email: str = "cloud@polyteia.de", role: str = "admin", API_URL: str = DEFAULT_API_URL) -> None:
+    
     headers = {
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json"
@@ -671,7 +722,9 @@ def invite_user_to_org(org_id: str, access_token: str, email: str = "cloud@polyt
     
     return response.json()
 
-def create_workspace(org_id: str, name: str, description: str, access_token: str) -> str:
+
+def create_workspace(org_id: str, name: str, description: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> str:
+    
     headers = {
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json"
@@ -700,7 +753,9 @@ def create_workspace(org_id: str, name: str, description: str, access_token: str
     
     return response.json()["data"]["id"]
 
-def create_solution(workspace_id: str, name: str, description: str, access_token: str) -> str:
+
+def create_solution(workspace_id: str, name: str, description: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> str:
+    
     headers = {
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json"
@@ -726,7 +781,9 @@ def create_solution(workspace_id: str, name: str, description: str, access_token
     
     return response.json()["data"]["id"]
 
-def add_user_to_workspace(workspace_id: str, user_id: str, access_token: str, role: str = "admin") -> None:
+
+def add_user_to_workspace(workspace_id: str, user_id: str, access_token: str, role: str = "admin", API_URL: str = DEFAULT_API_URL) -> None:
+    
     headers = {
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json"
@@ -751,8 +808,8 @@ def add_user_to_workspace(workspace_id: str, user_id: str, access_token: str, ro
         raise Exception(f"Failed to add user to workspace: {response.text}")
     
 
-
-def add_user_to_solution(solution_id: str, user_id: str, access_token: str, role: str = "admin") -> None:
+def add_user_to_solution(solution_id: str, user_id: str, access_token: str, role: str = "admin", API_URL: str = DEFAULT_API_URL) -> None:
+    
     headers = {
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json"
@@ -776,7 +833,9 @@ def add_user_to_solution(solution_id: str, user_id: str, access_token: str, role
     if response.status_code not in [200, 201]:
         raise Exception(f"Failed to add user to solution: {response.text}")
 
-def delete_org(org_id: str, access_token: str) -> None:
+
+def delete_org(org_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
+    
     headers = {
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json"
@@ -799,7 +858,8 @@ def delete_org(org_id: str, access_token: str) -> None:
         raise Exception(f"Failed to delete organization: {response.text}")
     
 
-def get_solution(solution_id: str, access_token: str) -> dict:
+def get_solution(solution_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
+    
     headers = {
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json"
@@ -823,13 +883,15 @@ def get_solution(solution_id: str, access_token: str) -> dict:
     
     return response.json()["data"]
 
-def update_solution_doc(solution_id: str, access_token: str, doc: dict) -> None:
+
+def update_solution_doc(solution_id: str, access_token: str, doc: dict, API_URL: str = DEFAULT_API_URL) -> None:
+    
     headers = {
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json"
         }
     
-    current_solution = get_solution(solution_id, access_token)
+    current_solution = get_solution(solution_id, access_token, API_URL)
 
     params = {
         "id": solution_id,
@@ -854,7 +916,9 @@ def update_solution_doc(solution_id: str, access_token: str, doc: dict) -> None:
     
     return response.json()
 
-def update_dataset_metadata(ds_id: str, columns: dict, access_token: str) -> None:
+
+def update_dataset_metadata(ds_id: str, columns: dict, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
+    
     headers = {
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json"
@@ -880,12 +944,14 @@ def update_dataset_metadata(ds_id: str, columns: dict, access_token: str) -> Non
         raise Exception(f"Failed to update dataset metadata: {response.text}")
     
 
-def get_dataset_metadata_cols(ds_id: str, access_token: str) -> dict:
-    dataset = get_dataset_by_id(ds_id, access_token)
+def get_dataset_metadata_cols(ds_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
+    
+    dataset = get_dataset_by_id(ds_id, access_token, API_URL)
     return dataset["data"]["metadata"]["schema"]["columns"]
 
 
-def share_dataset_with_group(ds_id: str, group_id: str, role: str, access_token: str) -> None:
+def share_dataset_with_group(ds_id: str, group_id: str, role: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
+    
     headers = {
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json"
@@ -916,7 +982,8 @@ def share_dataset_with_group(ds_id: str, group_id: str, role: str, access_token:
     if response.status_code not in [200, 201]:
         raise Exception(f"Failed to share dataset with group: {response.text}")
 
-def generate_download_token(ds_id: str, access_token: str) -> str:
+
+def generate_download_token(ds_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> str:
     """
     Generate a download token using the dataset id.
     """
@@ -945,7 +1012,7 @@ def generate_download_token(ds_id: str, access_token: str) -> str:
     return download_token
 
 
-def download_file(download_token: str, access_token: str) -> pl.DataFrame:
+def download_file(download_token: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> pl.DataFrame:
     """
     Download a Parquet file using the download token and return it as a Polars DataFrame.
     """
