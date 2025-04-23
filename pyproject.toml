@@ -2,4 +2,13 @@
 current_version = "0.1.0"
 commit = true
 tag = true
-files = ["setup.py"]
+# Remove the old 'files = ...' line
+
+# Define each file using the list of tables syntax
+[[tool.bumpversion.files]]
+filename = "setup.py"
+# Add other files here if needed, each in its own block:
+# [[tool.bumpversion.files]]
+# filename = "src/my_package/__init__.py"
+# search = "__version__ = '{current_version}'" # Optional: if defaults don't work
+# replace = "__version__ = '{new_version}'"    # Optional: if defaults don't work
