@@ -7,7 +7,7 @@ def load_requirements(filename):
 
 setup(
     name="gOS-api-sdk",
-    version="0.1.2",
+    version="0.1.3",
     packages=find_packages(),
     install_requires=load_requirements("requirements.txt"),
     include_package_data=True,
