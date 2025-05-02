@@ -1,5 +1,6 @@
 from .api_utils import (
     hello_world,
+    handle_api_response,
     get_org_access_token,
     update_dataset,
     create_dataset,
@@ -45,6 +46,7 @@ from .api_utils import (
 
 __all__ = [
     "hello_world",
+    "handle_api_response",
     "get_org_access_token",
     "update_dataset",
     "create_dataset",

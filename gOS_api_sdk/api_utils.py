@@ -11,6 +11,40 @@ DEFAULT_API_URL = "https://dev.polyteia.com"
 def hello_world():
     return "Hello, world from gOS-api-sdk!"
 
+def handle_api_response(response, *, context: str = "API call", expected_status_codes: tuple = (200, 201), required_keys: tuple = None) -> dict:
+    """
+    Validates an HTTP response from the API.
+
+    Args:
+        response (requests.Response): The response object returned by requests.
+        context (str): A human-readable context for the operation (e.g. "Create dataset").
+        expected_status_codes (tuple): Tuple of acceptable HTTP status codes.
+        required_keys (tuple): Nested keys to check existence in the JSON response.
+
+    Returns:
+        dict: Parsed JSON response if validation passes.
+
+    Raises:
+        Exception: If status code is unexpected, response isn't JSON, or required keys are missing.
+    """
+    try:
+        json_response = response.json()
+    except ValueError:
+        raise Exception(f"{context} failed: Invalid JSON response:\n{response.text}")
+
+    if response.status_code not in expected_status_codes:
+        raise Exception(f"{context} failed (HTTP {response.status_code}):\n{json_response}")
+
+    if required_keys:
+        current = json_response
+        for key in required_keys:
+            if key not in current:
+                raise Exception(f"{context} failed: Missing key '{key}' in response:\n{json_response}")
+            current = current[key]
+
+    return json_response
+
+
 
 def get_org_access_token(org_id: str, PAK: str, API_URL: str = DEFAULT_API_URL) -> str:
     """
@@ -28,11 +62,9 @@ def get_org_access_token(org_id: str, PAK: str, API_URL: str = DEFAULT_API_URL) 
         json=token_payload
     )
 
-    if token_response.status_code not in [200, 201]:
-        raise Exception(f"Failed to get access token for {org_id}: {token_response.text}")
+    json_response = handle_api_response(token_response, context=f"Get org access token for {org_id}", required_keys=("token",))
+    return json_response["token"]
 
-    access_token = token_response.json().get('token')
-    return access_token
 
 
 def update_dataset(ds_id: str, access_token: str, API_URL: str = DEFAULT_API_URL, **kwargs) -> None:
@@ -65,8 +97,7 @@ def update_dataset(ds_id: str, access_token: str, API_URL: str = DEFAULT_API_URL
     
     update_response = requests.post(f"{API_URL}/api", headers=headers, json=payload)
 
-    if update_response.status_code not in [200, 201]:
-        raise Exception(f"Failed to update dataset: {update_response.text}")
+    handle_api_response(update_response, context="Update dataset")
 
 
 def create_dataset(solution_id: str, name: str, description: str, source: str, slug: str, access_token: str, documentation: Optional[dict] = None, API_URL: str = DEFAULT_API_URL) -> str:
@@ -100,10 +131,9 @@ def create_dataset(solution_id: str, name: str, description: str, source: str, s
             json=dataset_payload
         )
 
-    if response.status_code not in [200, 201]:
-        raise Exception(f"Failed to create dataset: {response.text}")
-    
-    return response.json()["data"]["id"]
+
+    json_response = handle_api_response(response, context="Create dataset", required_keys=("data", "id"))
+    return json_response["data"]["id"]
 
 
 def generate_upload_token(ds_id: str, content_type: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> str:
@@ -126,10 +156,9 @@ def generate_upload_token(ds_id: str, content_type: str, access_token: str, API_
         json=payload
     )
 
-    if response.status_code not in [200, 201]:
-        raise Exception(f"Failed to generate upload token: {response.text}")
-    
-    return response.json()["data"]["token"]
+    json_response = handle_api_response(response, context="Generate upload token", required_keys=("data", "token"))
+    return json_response["data"]["token"]
+
 
 def upload_file(upload_token: str, df: pl.DataFrame, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
     """
@@ -160,10 +189,7 @@ def upload_file(upload_token: str, df: pl.DataFrame, access_token: str, API_URL:
         files=files
     )
 
-    if response.status_code not in [200, 201]:
-        raise Exception(f"Failed to upload: {response.text}")
-
-    return None
+    handle_api_response(response, context="Upload file")
 
 
 def create_insight(insight_body: dict, access_token: str, API_URL: str = DEFAULT_API_URL) -> str:
@@ -186,10 +212,8 @@ def create_insight(insight_body: dict, access_token: str, API_URL: str = DEFAULT
             json=payload
         )
     
-    if response.status_code not in [200, 201]:
-        raise Exception(f"Failed to create insight: {response.text}")
-    
-    return response.json()
+    json_response = handle_api_response(response, context="Create insight")
+    return json_response
 
 
 def update_insight(insight_id: str, insight_body: dict, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
@@ -217,8 +241,7 @@ def update_insight(insight_id: str, insight_body: dict, access_token: str, API_U
             json=payload
         )
 
-    if response.status_code not in [200, 201]:
-        raise Exception(f"Failed to update insight: {response.text}")
+    handle_api_response(response, context="Update insight")
     
 
 def get_org_id(client_id: str, mandant: str, API_URL: str = DEFAULT_API_URL) -> str:
@@ -287,10 +310,8 @@ def list_resources(
             json=payload
         )
     
-    if response.status_code not in [200, 201]:
-        raise Exception(f"Failed to list resources: {response.text}")
-
-    return response.json()
+    json_response = handle_api_response(response, context="List resources")
+    return json_response
 
 def list_resources_recursive(
                             container_id: str,
@@ -335,10 +356,8 @@ def get_dataset_by_id(dataset_id: str, access_token: str, API_URL: str = DEFAULT
             json=payload
         )
     
-    if response.status_code not in [200, 201]:
-        raise Exception(f"Failed to get dataset: {response.text}")
-    
-    return response.json()
+    json_response = handle_api_response(response, context="Get dataset by id")
+    return json_response
 
 def get_dataset_by_slug(solution_id: str, slug: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
 
@@ -361,10 +380,8 @@ def get_dataset_by_slug(solution_id: str, slug: str, access_token: str, API_URL:
             json=payload
         )
     
-    if response.status_code not in [200, 201]:
-        raise ValueError(f"Failed to get dataset: {response.text}")
-    
-    return response.json()
+    json_response = handle_api_response(response, context="Get dataset by slug")
+    return json_response
 
 
 def get_all_datasets_in_sol(sol_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> List[dict]:
@@ -398,10 +415,8 @@ def create_tag(org_id: str, name: str, description: str, access_token: str, colo
             json=payload
         )
     
-    if response.status_code not in [200, 201]:
-        raise Exception(f"Failed to create tag: {response.text}")
-    
-    return response.json()["data"]["id"]
+    json_response = handle_api_response(response, context="Create tag", required_keys=("data", "id"))
+    return json_response["data"]["id"]
 
 
 def search_tags(org_id: str, access_token: str, search: str, page: int = 1, size: int = 100, API_URL: str = DEFAULT_API_URL) -> List[dict]:
@@ -427,10 +442,8 @@ def search_tags(org_id: str, access_token: str, search: str, page: int = 1, size
             json=payload
         )
     
-    if response.status_code not in [200, 201]:
-        raise Exception(f"Failed to search tags: {response.text}")
-    
-    return response.json()["data"]["items"]
+    json_response = handle_api_response(response, context="Search tags", required_keys=("data", "items"))
+    return json_response["data"]["items"]
 
 
 def add_tag_to_ressource(tag_id: str, ressource_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
@@ -454,8 +467,7 @@ def add_tag_to_ressource(tag_id: str, ressource_id: str, access_token: str, API_
             json=payload
         )
     
-    if response.status_code not in [200, 201]:
-        raise Exception(f"Failed to add tag to resource: {response.text}")
+    handle_api_response(response, context="Add tag to resource")
     
 
 def get_insight(insight_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
@@ -478,10 +490,8 @@ def get_insight(insight_id: str, access_token: str, API_URL: str = DEFAULT_API_U
             json=payload
         )
     
-    if response.status_code not in [200, 201]:
-        raise Exception(f"Failed to get insight: {response.text}")
-    
-    return response.json()
+    json_response = handle_api_response(response, context="Get insight")
+    return json_response
 
 
 def find_insight_by_kpi_id(kpi_id: str, solution_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
@@ -511,7 +521,10 @@ def create_or_update_insight(insight_body: dict, solution_id: str, kpi_id: str, 
         return insight_id
     except Exception:
         insight_id = create_insight(insight_body, access_token, API_URL)
-        return insight_id["data"]["id"]
+        #return insight_id["data"]["id"]
+
+        ###CONFIRM
+        return insight_id["data"]["id"] if isinstance(insight_id, dict) else insight_id
         
 
 def delete_insight(insight_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
@@ -534,8 +547,7 @@ def delete_insight(insight_id: str, access_token: str, API_URL: str = DEFAULT_AP
             json=payload
         )
     
-    if response.status_code not in [200, 201]:
-        raise Exception(f"Failed to delete insight: {response.text}")
+    handle_api_response(response, context="Delete insight")
 
 
 def delete_dataset(ds_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
@@ -558,8 +570,7 @@ def delete_dataset(ds_id: str, access_token: str, API_URL: str = DEFAULT_API_URL
             json=payload
         )
     
-    if response.status_code not in [200, 201]:
-        raise Exception(f"Failed to delete dataset: {response.text}")
+    handle_api_response(response, context="Delete dataset")
         
 
 def list_tags(org_id: str, access_token: str, page: int = 1, size: int = 100, search: str = "", API_URL: str = DEFAULT_API_URL) -> dict:
@@ -585,10 +596,8 @@ def list_tags(org_id: str, access_token: str, page: int = 1, size: int = 100, se
             json=payload
         )
     
-    if response.status_code not in [200, 201]:
-        raise Exception(f"Failed to list tags: {response.text}")
-    
-    return response.json()
+    json_response = handle_api_response(response, context="List tags")
+    return json_response
 
 def list_tags_recursive(org_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> List[str]:
     page_nr = 1
@@ -626,10 +635,7 @@ def delete_tag(tag_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -
             json=payload
         )
     
-    if response.status_code not in [200, 201]:
-        raise Exception(f"Failed to delete tag: {response.text}")
-    
-    return response.json()
+    handle_api_response(response, context="Delete tag")
 
 
 def get_organisation(org_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
@@ -652,10 +658,8 @@ def get_organisation(org_id: str, access_token: str, API_URL: str = DEFAULT_API_
             json=payload
         )
     
-    if response.status_code not in [200, 201]:
-        raise Exception(f"Failed to get organization: {response.text}")
-    
-    return response.json()["data"]
+    json_response = handle_api_response(response, context="Get organization", required_keys=("data",))
+    return json_response["data"]
 
 
 def create_org(name: str, description: str, slug: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> str:
@@ -686,12 +690,8 @@ def create_org(name: str, description: str, slug: str, access_token: str, API_UR
             json=payload
         )
     
-    if response.status_code not in [200, 201]:
-        raise Exception(f"Failed to create organization: {response.text}")
-    
-    # print(response.json())
-    
-    return response.json()["data"]["id"]
+    json_response = handle_api_response(response, context="Create organization", required_keys=("data", "id"))
+    return json_response["data"]["id"]
 
 
 def invite_user_to_org(org_id: str, access_token: str, email: str = "cloud@polyteia.de", role: str = "admin", API_URL: str = DEFAULT_API_URL) -> None:
@@ -717,10 +717,8 @@ def invite_user_to_org(org_id: str, access_token: str, email: str = "cloud@polyt
             json=payload
         )
     
-    if response.status_code not in [200, 201]:
-        raise Exception(f"Failed to invite user to organization: {response.text}")
-    
-    return response.json()
+    json_response = handle_api_response(response, context="Invite user to organization")
+    return json_response
 
 
 def create_workspace(org_id: str, name: str, description: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> str:
@@ -748,10 +746,8 @@ def create_workspace(org_id: str, name: str, description: str, access_token: str
             json=payload
         )
     
-    if response.status_code not in [200, 201]:
-        raise Exception(f"Failed to create workspace: {response.text}")
-    
-    return response.json()["data"]["id"]
+    json_response = handle_api_response(response, context="Create workspace", required_keys=("data", "id"))
+    return json_response["data"]["id"]
 
 
 def create_solution(workspace_id: str, name: str, description: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> str:
@@ -776,10 +772,8 @@ def create_solution(workspace_id: str, name: str, description: str, access_token
             json=payload
         )
     
-    if response.status_code not in [200, 201]:
-        raise Exception(f"Failed to create solution: {response.text}")
-    
-    return response.json()["data"]["id"]
+    json_response = handle_api_response(response, context="Create solution", required_keys=("data", "id"))
+    return json_response["data"]["id"]
 
 
 def add_user_to_workspace(workspace_id: str, user_id: str, access_token: str, role: str = "admin", API_URL: str = DEFAULT_API_URL) -> None:
@@ -804,8 +798,7 @@ def add_user_to_workspace(workspace_id: str, user_id: str, access_token: str, ro
             json=payload
         )
     
-    if response.status_code not in [200, 201]:
-        raise Exception(f"Failed to add user to workspace: {response.text}")
+    handle_api_response(response, context="Add user to workspace")
     
 
 def add_user_to_solution(solution_id: str, user_id: str, access_token: str, role: str = "admin", API_URL: str = DEFAULT_API_URL) -> None:
@@ -830,8 +823,7 @@ def add_user_to_solution(solution_id: str, user_id: str, access_token: str, role
             json=payload
         )
     
-    if response.status_code not in [200, 201]:
-        raise Exception(f"Failed to add user to solution: {response.text}")
+    handle_api_response(response, context="Add user to solution")
 
 
 def delete_org(org_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
@@ -854,8 +846,7 @@ def delete_org(org_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -
             json=payload
         )
     
-    if response.status_code not in [200, 201]:
-        raise Exception(f"Failed to delete organization: {response.text}")
+    handle_api_response(response, context="Delete organization")
     
 
 def get_solution(solution_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
@@ -878,10 +869,8 @@ def get_solution(solution_id: str, access_token: str, API_URL: str = DEFAULT_API
             json=payload
         )
     
-    if response.status_code not in [200, 201]:
-        raise Exception(f"Failed to get solution: {response.text}")
-    
-    return response.json()["data"]
+    json_response = handle_api_response(response, context="Get solution", required_keys=("data",))
+    return json_response["data"]
 
 
 def update_solution_doc(solution_id: str, access_token: str, doc: dict, API_URL: str = DEFAULT_API_URL) -> None:
@@ -911,10 +900,8 @@ def update_solution_doc(solution_id: str, access_token: str, doc: dict, API_URL:
             json=payload
         )
     
-    if response.status_code not in [200, 201]:
-        raise Exception(f"Failed to update solution: {response.text}")
-    
-    return response.json()
+    json_response = handle_api_response(response, context="Update solution")
+    return json_response
 
 
 def update_dataset_metadata(ds_id: str, columns: dict, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
@@ -940,14 +927,16 @@ def update_dataset_metadata(ds_id: str, columns: dict, access_token: str, API_UR
             json=payload
         )
     
-    if response.status_code not in [200, 201]:
-        raise Exception(f"Failed to update dataset metadata: {response.text}")
+    handle_api_response(response, context="Update dataset metadata")
     
 
 def get_dataset_metadata_cols(ds_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
     
     dataset = get_dataset_by_id(ds_id, access_token, API_URL)
-    return dataset["data"]["metadata"]["schema"]["columns"]
+    #return dataset["data"]["metadata"]["schema"]["columns"]
+
+    ### CONFIRM
+    return dataset["data"].get("metadata", {}).get("schema", {}).get("columns", {})
 
 
 def share_dataset_with_group(ds_id: str, group_id: str, role: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
@@ -979,8 +968,7 @@ def share_dataset_with_group(ds_id: str, group_id: str, role: str, access_token:
             json=payload
         )
     
-    if response.status_code not in [200, 201]:
-        raise Exception(f"Failed to share dataset with group: {response.text}")
+    handle_api_response(response, context="Share dataset with group")
 
 
 def generate_download_token(ds_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> str:
@@ -1004,12 +992,9 @@ def generate_download_token(ds_id: str, access_token: str, API_URL: str = DEFAUL
     }
 
     response = requests.post(f"{API_URL}/api", headers=headers, json=payload)
-
-    if response.status_code not in [200, 201]:
-        raise Exception(f"Failed to generate download token: {response.text}")
     
-    download_token = response.json()["data"]["token"]
-    return download_token
+    json_response = handle_api_response(response, context="Generate download token", required_keys=("data", "token"))
+    return json_response["data"]["token"]
 
 
 def download_file(download_token: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> pl.DataFrame:
@@ -1024,8 +1009,8 @@ def download_file(download_token: str, access_token: str, API_URL: str = DEFAULT
     response = requests.get(url, headers=headers)
     
     if response.status_code != 200:
-        raise Exception(f"Failed to download file: {response.text}")
-    
+        raise Exception(f"Download file failed (HTTP {response.status_code}): {response.text}")
+
     buffer = io.BytesIO(response.content)
     df = pl.read_parquet(buffer)
     return df

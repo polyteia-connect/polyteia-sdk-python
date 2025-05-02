@@ -42,3 +42,6 @@ __pypackages__/
 
 # CI/CD
 *.log
+
+# Testing
+gos_api_sdk/testing/
