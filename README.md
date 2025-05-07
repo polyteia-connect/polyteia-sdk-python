@@ -18,13 +18,13 @@ A lightweight Python SDK for interacting with the gOS API — designed for seaml
 
 ## 📦 Installation
 
-### Install via pip :
+### Install via pip
 
 ```bash
 pip install git+https://github.com/polyteia-de/gOS-api-toolkit.git
 ```
 
-### Install locally for development:
+### Install locally for development
 
 ```bash
 git clone https://github.com/polyteia-de/gOS-api-toolkit.git
@@ -93,30 +93,67 @@ These tools ensure the SDK maintains a clean, consistent, and reliable codebase.
 
 ---
 
-## 🧪 Usage Example
+## 🧪 Usage Examples
+
+### 📍 Step 1: Authenticate & Get Access Token
+
+Before using the API, authenticate using your organization ID and Personal Access Key (PAK):
 
 ```python
 from gos_api_sdk import api_utils as api
 
-# Authenticate
-access_token = api.get_org_access_token(org_id="org_xyz", PAK="your_pak")
+# Replace with your organization ID and PAK
+org_id = "org_xyz"
+PAK = "your_personal_access_key"
 
-# Create a dataset
+# Get an access token for API operations
+access_token = api.get_org_access_token(org_id=org_id, PAK=PAK)
+```
+
+### 📁 Step 2: Create a Dataset
+
+Use the access token to create a dataset under a specific solution:
+
+```python
+# Define dataset details
+solution_id = "sol_123"
+dataset_name = "dataset_123"
+dataset_description = "Demo Description"
+dataset_source = "demo_source"
+dataset_slug = "unique_slug"
+
+# Create the dataset
 ds_id = api.create_dataset(
-    solution_id="sol_123",
-    name="Haushaltsdaten",
-    description="Finanzdaten der Kommune",
-    source="demo_source",
-    slug="haushalt-daten",
+    solution_id=solution_id,
+    name=dataset_name,
+    description=dataset_description,
+    source=dataset_source,
+    slug=dataset_slug,
     access_token=access_token
 )
+```
 
-# Upload data
+### 📤 Step 3: Upload a DataFrame to the Dataset
+
+Once the dataset is created, upload a Polars DataFrame using a generated upload token:
+
+```python
+import polars as pl
+
+# Prepare your DataFrame
+df = pl.DataFrame({
+    "jahr": [2021, 2022],
+    "betrag": [12345.67, 23456.78]
+})
+
+# Generate upload token
 upload_token = api.generate_upload_token(
-    ds_id,
+    ds_id=ds_id,
     content_type="application/vnd.apache.parquet",
     access_token=access_token
 )
+
+# Upload the file to the dataset
 api.upload_file(upload_token, df, access_token=access_token)
 ```
 
