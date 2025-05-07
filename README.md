@@ -191,10 +191,10 @@ All SDK functions use a shared utility — `handle_api_response()` — to consis
 
 This function ensures:
 
-* ✅ Safe JSON parsing (with clear errors on invalid responses)
-* ✅ HTTP status code validation (supports expected codes like 200/201)
-* ✅ Nested key checks (e.g. ensure `"data"` or `"data.token"` exists)
-* ✅ Context-specific, descriptive exception messages for debugging
+* Safe JSON parsing (with clear errors on invalid responses)
+* HTTP status code validation (supports expected codes like 200/201)
+* Nested key checks (e.g. ensure `"data"` or `"data.token"` exists)
+* Context-specific, descriptive exception messages for debugging
 
 ### 🔍 How It Works
 
