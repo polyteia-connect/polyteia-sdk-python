@@ -231,49 +231,7 @@ By handling all errors through one centralized method, the SDK ensures consisten
 
 ---
 
-## 🔁 CI/CD & Release Management
-
-### 📌 Version Bumping
-
-Versioning for this SDK is handled automatically using [`bump-my-version`](https://github.com/callowayproject/bump-my-version) as part of the release process.
-
-* When a new feature branch is merged into `main`, or when changes are pushed directly to `main`, the version is bumped based on the nature of the update (patch, minor, or major).
-* This ensures every production-ready build from `main` has a unique, traceable version identifier.
-
-The merge/push automatically updates the version in all relevant files:
-
-* `pyproject.toml`
-* `setup.py`
-
-> ℹ️ Contributors do not need to manually run version bumping commands. Versioning is managed by the SDK maintainers as part of the release process.
-
----
-
-## ✅ Testing
-
-Tests can be placed in `gos_api_sdk/testing/`:
-
-```bash
-pytest gos_api_sdk/testing/
-```
-
-> Note: this folder is excluded via `.gitignore`.
-
----
-
-## 🛠 Future Development Roadmap
-
-* Additional API communication functions will be added as needed, based on evolving project requirements.
-* CI/CD improvements are planned, including:
-
-  * Linting and formatting checks
-  * Automated testing
-  * GitHub Actions for release pipelines and quality gates
-
----
-
 ## 🤝 Contributing
-
 
 ### 🧩 Adding Functions to the Toolkit
 
@@ -332,6 +290,47 @@ Please **do not push directly to `main`**. Always:
 3. **Mention the TOOLKIT maintainers/admins as reviewers** in your merge request for review and approval.
 
 Following this process ensures code quality, visibility, and safe collaboration.
+
+---
+
+## 🔁 CI/CD & Release Management
+
+### 📌 Version Bumping
+
+Versioning for this SDK is handled automatically using [`bump-my-version`](https://github.com/callowayproject/bump-my-version) as part of the release process.
+
+* When a new feature branch is merged into `main`, or when changes are pushed directly to `main`, the version is bumped based on the nature of the update (patch, minor, or major).
+* This ensures every production-ready build from `main` has a unique, traceable version identifier.
+
+The merge/push automatically updates the version in all relevant files:
+
+* `pyproject.toml`
+* `setup.py`
+
+> ℹ️ Contributors do not need to manually run version bumping commands. Versioning is managed by the SDK maintainers as part of the release process.
+
+---
+
+## ✅ Testing
+
+Tests can be placed in `gos_api_sdk/testing/`:
+
+```bash
+pytest gos_api_sdk/testing/
+```
+
+> Note: this folder is excluded via `.gitignore`.
+
+---
+
+## 🛠 Future Development Roadmap
+
+* Additional API communication functions will be added as needed, based on evolving project requirements.
+* CI/CD improvements are planned, including:
+
+  * Linting and formatting checks
+  * Automated testing
+  * GitHub Actions for release pipelines and quality gates
 
 ---
 
