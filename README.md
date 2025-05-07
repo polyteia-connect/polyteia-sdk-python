@@ -187,20 +187,51 @@ api.upload_file(upload_token, df, access_token=access_token)
 
 ## ⚠️ Error Handling
 
-All functions use `handle_api_response()` for:
+All SDK functions use a shared utility — `handle_api_response()` — to consistently manage API responses.
 
-* Safe JSON parsing
-* Status code validation
-* Nested key validation (e.g. `data.token`)
-* Descriptive exception messages
+This function ensures:
 
-### Example Error
-
-```bash
-[Generate upload token] ❌ Missing key 'data.token': Validation failed (id must be a valid ID)
-```
+* ✅ Safe JSON parsing (with clear errors on invalid responses)
+* ✅ HTTP status code validation (supports expected codes like 200/201)
+* ✅ Nested key checks (e.g. ensure `"data"` or `"data.token"` exists)
+* ✅ Context-specific, descriptive exception messages for debugging
 
 ---
+
+### 🔍 How It Works
+
+`handle_api_response()` inspects every API response to ensure:
+
+* The response is valid JSON
+* The status code is expected (200, 201 by default)
+* Any specified keys (like `"data"` or `"data.id"`) exist
+* If any of these checks fail, it raises a detailed, contextual exception
+
+---
+
+### 💥 Example Errors
+
+#### ❌ Identified Errors (Invalid Input or Auth)
+
+```bash
+# Wrong org_id (not found)
+Exception: Get org access token for org_cvrpb2l5460gkf91b failed (HTTP 404):
+{'code': 404, 'message': 'not found'}
+
+# Wrong PAK (unauthorized)
+Exception: Get org access token for org_cvrpb2l5460gkf91borg failed (HTTP 401):
+{'error': 'Unauthorized'}
+```
+
+#### ❗ Unidentified Error (Unexpected Backend Response)
+
+```bash
+# Dataset creation with existing slug, response missing 'data'
+Exception: Create dataset failed: Missing key 'data' in response:
+{'error': {'code': 500, 'message': 'internal error'}}
+```
+
+By handling all errors through one centralized method, the SDK ensures consistent, debuggable behavior across every function — whether it returns data or not.
 
 ## 🔁 CI/CD & Release Management
 
