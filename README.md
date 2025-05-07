@@ -201,24 +201,21 @@ All functions use `handle_api_response()` for:
 
 ---
 
-## 🧼 Linting & Code Style
+## 🔁 CI/CD & Release Management
 
-```bash
-black .
-isort .
-flake8 .
-mypy gos_api_sdk/
-```
+### 📌 Version Bumping
 
----
+Versioning for this SDK is handled automatically using [`bump-my-version`](https://github.com/callowayproject/bump-my-version) as part of the release process.
 
-## 🔖 Versioning
+* When a new feature branch is merged into `main`, or when changes are pushed directly to `main`, the version is bumped based on the nature of the update (patch, minor, or major).
+* This ensures every production-ready build from `main` has a unique, traceable version identifier.
 
-Managed via `bump-my-version`:
+The merge/push automatically updates the version in all relevant files:
 
-```bash
-bump-my-version bump patch  # or minor / major
-```
+* `pyproject.toml`
+* `setup.py`
+
+> ℹ️ Contributors do not need to manually run version bumping commands. Versioning is managed by the SDK maintainers as part of the release process.
 
 ---
 
@@ -234,7 +231,7 @@ pytest gos_api_sdk/testing/
 
 ---
 
-## 🛠 Roadmap
+## 🛠 Future Development Roadmap
 
 * Additional API communication functions will be added as needed, based on evolving project requirements.
 * CI/CD improvements are planned, including:
