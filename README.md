@@ -6,13 +6,14 @@ A lightweight Python SDK for interacting with the gOS API — designed for seaml
 
 ## 🚀 Features
 
-- 🔐 Organization, workspace, and user management
-- 📊 Datasets creation, upload, metadata updates
-- 📈 Insights management
-- 🏷️ Tagging system for resources
-- 📁 File upload/download
-- 🔁 Centralized error handling with
-- ⚙️ Extensible for additional API commands
+* 🔐 Full organization, workspace, user, and role management
+* 📊 Dataset operations: create, update, delete, metadata handling, and bulk listing
+* 📈 Insight lifecycle support: create, update, retrieve, find-by-KPI, delete
+* 🏷️ Comprehensive tagging: create, assign, search, list, delete
+* 📁 Upload/download Parquet files via Polars and Arrow
+* 🔁 Robust error handling using a shared `handle_api_response` utility
+* 🔎 Resource discovery: list datasets, insights, tags, solutions recursively
+* ⚙️ Modular and extensible — easily add new API-bound commands
 
 ---
 
