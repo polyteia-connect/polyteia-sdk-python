@@ -196,8 +196,6 @@ This function ensures:
 * ✅ Nested key checks (e.g. ensure `"data"` or `"data.token"` exists)
 * ✅ Context-specific, descriptive exception messages for debugging
 
----
-
 ### 🔍 How It Works
 
 `handle_api_response()` inspects every API response to ensure:
@@ -206,8 +204,6 @@ This function ensures:
 * The status code is expected (200, 201 by default)
 * Any specified keys (like `"data"` or `"data.id"`) exist
 * If any of these checks fail, it raises a detailed, contextual exception
-
----
 
 ### 💥 Example Errors
 
@@ -232,6 +228,8 @@ Exception: Create dataset failed: Missing key 'data' in response:
 ```
 
 By handling all errors through one centralized method, the SDK ensures consistent, debuggable behavior across every function — whether it returns data or not.
+
+---
 
 ## 🔁 CI/CD & Release Management
 
