@@ -121,7 +121,7 @@ api.get_org_access_token(org_id="org_xyz", PAK=PAK, API_URL=API_URL)
 
 ## 🧪 Toolkit Usage Examples
 
-### 📍 Step 1: Authenticate & Get Access Token
+### Step 1: Authenticate & Get Access Token
 
 Before using the API, authenticate using your organization ID and Personal Access Key (PAK):
 
@@ -136,7 +136,7 @@ PAK = "your_personal_access_key"
 access_token = api.get_org_access_token(org_id=org_id, PAK=PAK)
 ```
 
-### 📁 Step 2: Create a Dataset
+### Step 2: Create a Dataset
 
 Use the access token to create a dataset under a specific solution:
 
@@ -159,7 +159,7 @@ ds_id = api.create_dataset(
 )
 ```
 
-### 📤 Step 3: Upload a DataFrame to the Dataset
+### Step 3: Upload a DataFrame to the Dataset
 
 Once the dataset is created, upload a Polars DataFrame using a generated upload token:
 
@@ -207,7 +207,7 @@ This function ensures:
 
 ### 💥 Example Errors
 
-#### ❌ Identified Errors (Invalid Input or Auth)
+#### Identified Errors (Invalid Input or Auth)
 
 ```bash
 # Wrong org_id (not found)
@@ -219,7 +219,7 @@ Exception: Get org access token for org_cvrpb2l5460gkf91borg failed (HTTP 401):
 {'error': 'Unauthorized'}
 ```
 
-#### ❗ Unidentified Error (Unexpected Backend Response)
+#### Unidentified Error (Unexpected Backend Response)
 
 ```bash
 # Dataset creation with existing slug, response missing 'data'
@@ -237,7 +237,7 @@ By handling all errors through one centralized method, the SDK ensures consisten
 
 When adding a new function to the SDK, follow these conventions:
 
-#### ✅ Use `handle_api_response()` for API calls
+#### Use `handle_api_response()` for API calls
 
 Always wrap the response with `handle_api_response()` to ensure:
 
@@ -257,7 +257,7 @@ def delete_dataset(ds_id: str, access_token: str, API_URL: str = DEFAULT_API_URL
     handle_api_response(response, context="Delete dataset")
 ```
 
-#### ✅ Add the function to `__init__.py`
+#### Add the function to `__init__.py`
 
 Make the function importable at the package level by adding it to `gos_api_sdk/__init__.py`.
 
