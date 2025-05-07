@@ -121,7 +121,7 @@ api.get_org_access_token(org_id="org_xyz", PAK=PAK, API_URL=API_URL)
 
 ## 🧪 Toolkit Usage Examples
 
-### Step 1: Authenticate & Get Access Token
+### Example 1: Authenticate & Get Access Token
 
 Before using the API, authenticate using your organization ID and Personal Access Key (PAK):
 
@@ -136,7 +136,7 @@ PAK = "your_personal_access_key"
 access_token = api.get_org_access_token(org_id=org_id, PAK=PAK)
 ```
 
-### Step 2: Create a Dataset
+### Example 2: Create a Dataset
 
 Use the access token to create a dataset under a specific solution:
 
@@ -159,7 +159,7 @@ ds_id = api.create_dataset(
 )
 ```
 
-### Step 3: Upload a DataFrame to the Dataset
+### Example 3: Upload a DataFrame to the Dataset
 
 Once the dataset is created, upload a Polars DataFrame using a generated upload token:
 
