@@ -236,28 +236,29 @@ pytest gos_api_sdk/testing/
 
 ## 🛠 Roadmap
 
-* OAuth flow support
-* Async client (`httpx`)
-* CLI wrapper
-* pdoc/mkdocs auto-docs
+* Additional API communication functions will be added as needed, based on evolving project requirements.
+* CI/CD improvements are planned, including:
+
+  * Linting and formatting checks
+  * Automated testing
+  * GitHub Actions for release pipelines and quality gates
 
 ---
 
 ## 🤝 Contributing
 
-Pull requests are welcome! Please follow existing patterns and run formatters before submitting:
+Pull requests are welcome!
 
-```bash
-black .
-flake8 .
-```
+Please **do not push directly to `main`**. Always:
+
+1. Create a **feature branch** for your changes.
+2. Open a **merge request** targeting `main`.
+3. **Mention the TOOLKIT maintainers/admins as reviewers** in your merge request for review and approval.
+
+Following this process ensures code quality, visibility, and safe collaboration.
 
 ---
 
 ## 📝 License
 
 Polyteia License
-
----
-
-```
