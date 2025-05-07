@@ -107,7 +107,7 @@ By default, all API requests are sent to the global constant `DEFAULT_API_URL`, 
 DEFAULT_API_URL = "https://dev.polyteia.com"
 ```
 
-If you're working with a different environment (e.g. development or staging), you can override the default by passing a custom URL into any function call:
+If you're working with a different environment (e.g. production), you can override the default by passing a custom URL into any function call:
 
 ```python
 API_URL = "https://prd.polyteia.com"
@@ -118,7 +118,7 @@ api.get_org_access_token(org_id="org_xyz", PAK=PAK, API_URL=API_URL)
 
 ---
 
-## 🧪 Usage Examples
+## 🧪 Toolkit Usage Examples
 
 ### 📍 Step 1: Authenticate & Get Access Token
 
@@ -256,13 +256,8 @@ flake8 .
 
 ## 📝 License
 
-MIT License (or specify your internal license here)
+Polyteia License
 
 ---
 
-```
-
----
-
-This file is **fully plug-and-play** — just copy it to your project root as `README.md`. Let me know if you’d like a separate CONTRIBUTING.md, `docs/` setup, or `mkdocs.yml` scaffold.
 ```
