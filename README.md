@@ -93,6 +93,31 @@ These tools ensure the SDK maintains a clean, consistent, and reliable codebase.
 
 ---
 
+## 🌐 API URL Configuration
+
+Most SDK functions include an optional `API_URL` parameter with a default value:
+
+```python
+API_URL: str = DEFAULT_API_URL
+```
+
+By default, all API requests are sent to the global constant `DEFAULT_API_URL`, which is typically defined in the SDK as:
+
+```python
+DEFAULT_API_URL = "https://dev.polyteia.com"
+```
+
+If you're working with a different environment (e.g. development or staging), you can override the default by passing a custom URL into any function call:
+
+```python
+API_URL = "https://prd.polyteia.com"
+api.get_org_access_token(org_id="org_xyz", PAK=PAK, API_URL=API_URL)
+```
+
+> 💡 You only need to override `API_URL` when working outside the default development environment.
+
+---
+
 ## 🧪 Usage Examples
 
 ### 📍 Step 1: Authenticate & Get Access Token
