@@ -244,6 +244,55 @@ pytest gos_api_sdk/testing/
 
 ## 🤝 Contributing
 
+
+### 🧩 Adding Functions to the Toolkit
+
+When adding a new function to the SDK, follow these conventions:
+
+#### ✅ Use `handle_api_response()` for API calls
+
+Always wrap the response with `handle_api_response()` to ensure:
+
+* Consistent error handling
+* Clear debugging
+* Safe key access even when the function returns `None`
+* Define the `context` in the function call as needed for the respective description
+
+**Example:**
+
+```python
+def delete_dataset(ds_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
+    headers = {"Authorization": f"Bearer {access_token}"}
+    payload = {"command": "delete_dataset", "params": {"id": ds_id}}
+
+    response = requests.post(f"{API_URL}/api", headers=headers, json=payload)
+    handle_api_response(response, context="Delete dataset")
+```
+
+#### ✅ Add the function to `__init__.py`
+
+Make the function importable at the package level by adding it to `gos_api_sdk/__init__.py`.
+
+**Example:**
+
+```python
+# gos_api_sdk/__init__.py
+
+from .api_utils import (
+    hello_world,
+    new_added_function
+)
+
+__all__ = [
+    "hello_world",
+    "new_added_function"
+]
+```
+
+Adhering to these standards ensures the SDK remains stable, testable, and easy to extend.
+
+### 🔁 Push & Merge Workflow
+
 Pull requests are welcome!
 
 Please **do not push directly to `main`**. Always:
