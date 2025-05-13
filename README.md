@@ -86,6 +86,15 @@ If needed (e.g. in a minimal environment or container), you can manually install
 pip install -r requirements.txt
 ```
 
+If needed, install the extra requirements with:
+
+```bash
+pip install "git+https://github.com/polyteia-de/gOS-api-toolkit.git#egg=gos-api-sdk[package_name]"
+```
+
+> 💡 Refer to the file `setup.py` to identify extra requirements.
+
+
 ### 🛠 Install Development Dependencies
 
 To contribute to the SDK or run tests, you’ll need additional tools.
