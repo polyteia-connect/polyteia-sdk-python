@@ -10,6 +10,9 @@ setup(
     version="0.1.3",
     packages=find_packages(),
     install_requires=load_requirements("requirements.txt"),
+    extras_require={
+        "spark": ["pyspark>=3.4.0"]  # Optional
+    },
     include_package_data=True,
     author="Team Implementaion",
     author_email="implementation@polyteia.com",

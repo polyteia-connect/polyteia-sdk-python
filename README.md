@@ -185,6 +185,41 @@ api.upload_file(upload_token, df, access_token=access_token)
 
 ---
 
+Here's a polished and professional **README section** you can drop directly into your documentation under a heading like `📤 Data Upload & 📥 Download Formats`:
+
+---
+
+## 📤 Supported Input and Output Types
+
+### Input types for Uploading Data
+
+The SDK’s `upload_file()` function accepts a variety of input types, giving you flexibility across different data processing workflows. Internally, all inputs are converted to a `pyarrow.Table` for efficient Parquet-based upload.
+
+| Format Type       | Accepted Object         | Notes                                       |
+| ----------------- | ----------------------- | ------------------------------------------- |
+| Polars DataFrame  | `polars.DataFrame`      | Recommended internal format                 |
+| Pandas DataFrame  | `pandas.DataFrame`      | Automatically converted to Arrow            |
+| PyArrow Table     | `pyarrow.Table`         | Used as-is                                  |
+| PySpark DataFrame | `pyspark.sql.DataFrame` | Automatically converted via `.toPandas()`   |
+| List of dicts     | `list[dict]`            | Each dict = one row                         |
+| Single dictionary | `dict`                  | Treated as a single-row table               |
+| List of lists     | `list[list]`            | Requires `columns` argument to infer schema |
+| NumPy array       | `numpy.ndarray` (2D)    | Requires `columns` argument                 |
+
+> 💡 When using list-of-lists or NumPy arrays, the `columns` parameter **must be provided** to infer column names.
+
+### Output Types for Downloading Data
+
+The `download_file()` function supports multiple return formats based on the `output_format` argument. By default, it returns a `polars.DataFrame`.
+
+| Output Format    | Argument Value | Returned Object    |
+| ---------------- | -------------- | ------------------ |
+| Polars DataFrame | `"polars"`     | `polars.DataFrame` |
+| Pandas DataFrame | `"pandas"`     | `pandas.DataFrame` |
+| PyArrow Table    | `"arrow"`      | `pyarrow.Table`    |
+
+---
+
 ## ⚠️ Error Handling
 
 All SDK functions use a shared utility — `handle_api_response()` — to consistently manage API responses.
