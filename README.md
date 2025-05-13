@@ -185,10 +185,6 @@ api.upload_file(upload_token, df, access_token=access_token)
 
 ---
 
-Here's a polished and professional **README section** you can drop directly into your documentation under a heading like `📤 Data Upload & 📥 Download Formats`:
-
----
-
 ## 📤 Supported Input and Output Types
 
 ### Input types for Uploading Data
