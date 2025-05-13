@@ -119,6 +119,46 @@ api.get_org_access_token(org_id="org_xyz", PAK=PAK, API_URL=API_URL)
 
 ---
 
+## 🔐 Authentication
+
+Before you can interact with the API using this SDK, you need to authenticate your requests. This is done using:
+
+1. A **Personal Access Key (PAK)** — your master credential
+2. An **Access Token** — scoped to a specific organization
+
+---
+
+### 🔑 Personal Access Key (PAK)
+
+The **Personal Access Key (PAK)** is a secret token tied to your user account. It's used to securely request access tokens for specific organizations.
+
+* **You must generate your PAK manually.**
+* Refer to the official guide:
+  👉 [Zugriffsschlüssel (PAK) erstellen – Polyteia Docs](https://docs.polyteia.com/konto/zugriffsschlussel-pak)
+
+> 🛑 Keep your PAK secure. Do not hardcode or expose it in shared code.
+
+---
+
+### 🪪 Access Token (Org-Scoped)
+
+Access tokens are used to authenticate API calls on behalf of a specific **organization**.
+
+To obtain one, use the `get_org_access_token()` function:
+
+```python
+from gos_api_sdk import get_org_access_token
+
+access_token = get_org_access_token(org_id="org_xyz", PAK="your_pak")
+```
+
+#### ⚠️ Important:
+
+* Access tokens are **scoped to a specific organization**.
+* If you're working with multiple `org_id`s, you must obtain a **separate access token** for each one using the same `PAK`.
+
+---
+
 ## 🧪 Toolkit Usage Examples
 
 ### Example 1: Authenticate & Get Access Token
