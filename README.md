@@ -66,9 +66,13 @@ gos-api-toolkit/
 
 The SDK depends on a few core libraries to handle HTTP requests and data serialization:
 
-* `requests` – for communicating with the API
-* `pyarrow` – for working with Arrow and Parquet file formats
-* `polars` – for efficient DataFrame processing
+* `requests`
+* `pyarrow`
+* `polars`
+* `pandas`
+* `numpy`
+* `pyspark` - Optional
+
 
 These dependencies are **automatically installed** when the SDK is installed via pip:
 
