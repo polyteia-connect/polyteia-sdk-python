@@ -126,8 +126,6 @@ Before you can interact with the API using this SDK, you need to authenticate yo
 1. A **Personal Access Key (PAK)** — your master credential
 2. An **Access Token** — scoped to a specific organization
 
----
-
 ### 🔑 Personal Access Key (PAK)
 
 The **Personal Access Key (PAK)** is a secret token tied to your user account. It's used to securely request access tokens for specific organizations.
@@ -137,8 +135,6 @@ The **Personal Access Key (PAK)** is a secret token tied to your user account. I
   👉 [Zugriffsschlüssel (PAK) erstellen – Polyteia Docs](https://docs.polyteia.com/konto/zugriffsschlussel-pak)
 
 > 🛑 Keep your PAK secure. Do not hardcode or expose it in shared code.
-
----
 
 ### 🪪 Access Token (Org-Scoped)
 
