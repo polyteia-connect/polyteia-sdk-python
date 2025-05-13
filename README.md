@@ -2,7 +2,9 @@
 
 A lightweight Python SDK for interacting with the gOS API — designed for seamless data integration, resource management, and automation within the Polyteia platform or similar data environments.
 
+
 ---
+
 
 ## 🚀 Features
 
@@ -15,7 +17,9 @@ A lightweight Python SDK for interacting with the gOS API — designed for seaml
 * 🔎 Resource discovery: list datasets, insights, tags, solutions recursively
 * ⚙️ Modular and extensible — easily add new API-bound commands
 
+
 ---
+
 
 ## 📦 Installation
 
@@ -35,6 +39,7 @@ pip install -e .
 
 ---
 
+
 ## 📁 Project Structure
 
 ```
@@ -51,7 +56,9 @@ gos-api-toolkit/
 ├── .gitignore                # Local tests (excluded from Git)
 ```
 
+
 ---
+
 
 ## 🔧 Requirements
 
@@ -92,7 +99,9 @@ This includes:
 
 These tools ensure the SDK maintains a clean, consistent, and reliable codebase.
 
+
 ---
+
 
 ## 🌐 API URL Configuration
 
@@ -117,7 +126,9 @@ api.get_org_access_token(org_id="org_xyz", PAK=PAK, API_URL=API_URL)
 
 > 💡 You only need to override `API_URL` when working outside the default development environment.
 
+
 ---
+
 
 ## 🔐 Authentication
 
@@ -153,7 +164,9 @@ access_token = get_org_access_token(org_id="org_xyz", PAK="your_pak")
 * Access tokens are **scoped to a specific organization**.
 * If you're working with multiple `org_id`s, you must obtain a **separate access token** for each one using the same `PAK`.
 
+
 ---
+
 
 ## 🧪 Toolkit Usage Examples
 
@@ -219,7 +232,9 @@ upload_token = api.generate_upload_token(
 api.upload_file(upload_token, df, access_token=access_token)
 ```
 
+
 ---
+
 
 ## 📤 Supported Input and Output Types
 
@@ -250,7 +265,9 @@ The `download_file()` function supports multiple return formats based on the `ou
 | Pandas DataFrame | `"pandas"`     | `pandas.DataFrame` |
 | PyArrow Table    | `"arrow"`      | `pyarrow.Table`    |
 
+
 ---
+
 
 ## ⚠️ Error Handling
 
@@ -296,7 +313,9 @@ Exception: Create dataset failed: Missing key 'data' in response:
 
 By handling all errors through one centralized method, the SDK ensures consistent, debuggable behavior across every function — whether it returns data or not.
 
+
 ---
+
 
 ## 🤝 Contributing
 
@@ -358,7 +377,9 @@ Please **do not push directly to `main`**. Always:
 
 Following this process ensures code quality, visibility, and safe collaboration.
 
+
 ---
+
 
 ## 🔁 CI/CD & Release Management
 
@@ -376,7 +397,9 @@ The merge/push automatically updates the version in all relevant files:
 
 > ℹ️ Contributors do not need to manually run version bumping commands. Versioning is managed by the SDK maintainers as part of the release process.
 
+
 ---
+
 
 ## ✅ Testing
 
@@ -388,7 +411,9 @@ pytest gos_api_sdk/testing/
 
 > Note: this folder is excluded via `.gitignore`.
 
+
 ---
+
 
 ## 🛠 Future Development Roadmap
 
@@ -399,7 +424,9 @@ pytest gos_api_sdk/testing/
   * Automated testing
   * GitHub Actions for release pipelines and quality gates
 
+
 ---
+
 
 ## 📝 License
 
