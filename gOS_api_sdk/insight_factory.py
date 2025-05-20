@@ -71,6 +71,7 @@ class InsightBuilderV3:
         return self
 
     def set_mode(self, mode: str) -> 'InsightBuilderV3':
+        """This could be either 'queryBuilder' or 'sqlEditor'."""
         self._insight.query.mode = mode
         return self
 
@@ -153,6 +154,8 @@ class InsightBuilderV3:
         return self
 
     def set_config(self, cfg: Dict[str, Any]) -> 'InsightBuilderV3':
+        """Config defines the vizualization settings, this might
+        need its own builder in the future."""
         self._insight.config = cfg
         return self
 
