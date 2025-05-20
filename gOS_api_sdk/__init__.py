@@ -1,5 +1,4 @@
 from .api_utils import (
-    hello_world,
     to_pyarrow_table,
     handle_api_response,
     get_org_access_token,
@@ -44,8 +43,18 @@ from .api_utils import (
     download_file
 )
 
+from .insight_factory import (
+    InsightBuilderV3,
+    InsightDef,
+    QueryDef,
+    QueryBuilderDef,
+    DatasetDef,
+    SelectDef,
+    WhereDef,
+    OrderByDef,
+)
+
 __all__ = [
-    "hello_world",
     "to_pyarrow_table",
     "handle_api_response",
     "get_org_access_token",
@@ -87,5 +96,14 @@ __all__ = [
     "get_dataset_metadata_cols",
     "share_dataset_with_group",
     "generate_download_token",
-    "download_file"
+    "download_file",
+    # Insight Factory
+    "InsightBuilderV3",
+    "InsightDef",
+    "QueryDef",
+    "QueryBuilderDef",
+    "DatasetDef",
+    "SelectDef",
+    "WhereDef",
+    "OrderByDef"
 ]

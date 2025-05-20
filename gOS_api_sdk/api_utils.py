@@ -11,10 +11,7 @@ import numpy as np
 DEFAULT_API_URL = "https://dev.polyteia.com"
 
 
-def hello_world():
-    return "Hello, world from gOS-api-sdk!"
-
-def to_pyarrow_table(data, columns: list[str] = None) -> pa.Table:
+def to_pyarrow_table(data, columns: Optional[list[str]] = None) -> pa.Table:
     """
     Converts supported input formats into a pyarrow.Table.
 
