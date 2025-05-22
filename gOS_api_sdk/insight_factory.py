@@ -21,6 +21,11 @@ VALID_FILTER_OPERATORS = {
     "is_not_null_or_empty",
 }
 
+VALID_MODES = {
+    "queryBuilder",
+    "sqlEditor"
+}
+
 @dataclass
 class DatasetDef:
     datasetId: str
@@ -91,6 +96,8 @@ class InsightBuilderV3:
 
     def set_mode(self, mode: str) -> 'InsightBuilderV3':
         """This could be either 'queryBuilder' or 'sqlEditor'."""
+        if mode not in VALID_MODES:
+            raise ValueError(f"Invalid mode: {mode}. Valid modes are: {VALID_MODES}")
         self._insight.query.mode = mode
         return self
 
