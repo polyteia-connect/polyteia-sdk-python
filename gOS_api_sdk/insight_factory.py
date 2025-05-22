@@ -2,6 +2,30 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
+VALID_FILTER_OPERATORS = {
+    "equals",
+    "not_equals",
+    "like",
+    "not_like",
+    "starts_with",
+    "ends_with",
+    "contains",
+    "not_contains",
+    "is_null",
+    "is_not_null",
+    "greater_than",
+    "less_than",
+    "greater_or_equals",
+    "less_or_equals",
+    "is_null_or_empty",
+    "is_not_null_or_empty",
+}
+
+VALID_MODES = {
+    "queryBuilder",
+    "sqlEditor"
+}
+
 @dataclass
 class DatasetDef:
     datasetId: str
@@ -72,6 +96,8 @@ class InsightBuilderV3:
 
     def set_mode(self, mode: str) -> 'InsightBuilderV3':
         """This could be either 'queryBuilder' or 'sqlEditor'."""
+        if mode not in VALID_MODES:
+            raise ValueError(f"Invalid mode: {mode}. Valid modes are: {VALID_MODES}")
         self._insight.query.mode = mode
         return self
 
@@ -114,6 +140,8 @@ class InsightBuilderV3:
                    value: Any,
                    dataset_id: Optional[str] = None
     ) -> 'InsightBuilderV3':
+        if operator not in VALID_FILTER_OPERATORS:
+            raise ValueError(f"Invalid operator: {operator}. Valid operators are: {VALID_FILTER_OPERATORS}")
         ds_id = dataset_id or (self._insight.query.queryBuilder.datasets[0].datasetId if self._insight.query.queryBuilder.datasets else "")
         where = WhereDef(
             id=str(uuid.uuid4()),
