@@ -647,6 +647,28 @@ def delete_dataset(ds_id: str, access_token: str, API_URL: str = DEFAULT_API_URL
         )
     
     handle_api_response(response, context="Delete dataset")
+
+def delete_report(report_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
+    
+    headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json"
+        }
+    
+    payload = {
+        "command": "delete_report",
+            "params": {
+                "id": report_id
+            }
+        }
+    
+    response = requests.post(
+            f"{API_URL}/api",
+            headers=headers,
+            json=payload
+        )
+    
+    handle_api_response(response, context="Delete report")
         
 
 def list_tags(org_id: str, access_token: str, page: int = 1, size: int = 100, search: str = "", API_URL: str = DEFAULT_API_URL) -> dict:
@@ -1112,3 +1134,121 @@ def download_file(
         return pq.read_table(buffer)
     else:
         raise ValueError(f"Unsupported output_format: {output_format}. Choose from 'polars', 'pandas', 'arrow'.")
+    
+def list_workspaces(org_id: str, access_token: str, page: int = 1, size: int = 100, search: str = "", API_URL: str = DEFAULT_API_URL) -> dict:
+    
+    headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json"
+        }
+    
+    payload = {
+        "query": "list_workspaces",
+            "params": {
+                "organization_id": org_id,
+                "page": page,
+                "size": size,
+                "search": search
+            }
+        }
+    
+    response = requests.post(
+            f"{API_URL}/api",
+            headers=headers,
+            json=payload
+        )
+    
+    json_response = handle_api_response(response, context="List workspaces")
+    return json_response
+
+def list_solutions(org_id: str, access_token: str, page: int = 1, size: int = 100, search: str = "", API_URL: str = DEFAULT_API_URL) -> dict:
+    
+    headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json"
+        }
+    
+    payload = {
+        "query": "list_solutions",
+            "params": {
+                "organization_id": org_id,
+                "page": page,
+                "size": size,
+                "search": search
+            }
+        }
+    
+    response = requests.post(
+            f"{API_URL}/api",
+            headers=headers,
+            json=payload
+        )
+    
+    json_response = handle_api_response(response, context="List solutions")
+    return json_response
+
+def create_report(report_body: dict, access_token: str, API_URL: str = DEFAULT_API_URL) -> str:
+    """
+    Create a report.
+    """
+    headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json"
+        }
+    
+    payload = {
+        "command": "create_report",
+            "params": report_body
+        }
+    
+    print(payload)
+
+    response = requests.post(
+            f"{API_URL}/api",
+            headers=headers,
+            json=payload
+        )
+
+    json_response = handle_api_response(response, context="Create report", required_keys=("data", "id"))
+    report_id = json_response["data"]["id"]
+
+    # add all datasets from the report metadata
+    for dataset_id in report_body["metadata"]["datasets"]:
+        payload = {
+            "command": "add_dataset_to_report",
+            "params": {
+                "dataset_id": dataset_id,
+                "report_id": report_id
+            }
+        }
+        response = requests.post(f"{API_URL}/api", headers={
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json"
+        }, json=payload)
+        
+        if response.status_code != 200:
+            print(f"Warning: Failed to add dataset {dataset_id} to report: {response.text}")
+    
+    return report_id
+
+def delete_solution(solution_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
+    
+    headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json"
+        }
+    
+    payload = {
+        "command": "delete_solution",
+            "params": {
+                "id": solution_id
+            }
+        }
+    
+    response = requests.post(
+            f"{API_URL}/api",
+            headers=headers,
+            json=payload
+        )
+    
+    handle_api_response(response, context="Delete solution")

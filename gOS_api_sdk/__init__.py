@@ -23,6 +23,7 @@ from .api_utils import (
     create_or_update_insight,
     delete_insight,
     delete_dataset,
+    delete_report,
     list_tags,
     list_tags_recursive,
     delete_tag,
@@ -40,7 +41,11 @@ from .api_utils import (
     get_dataset_metadata_cols,
     share_dataset_with_group,
     generate_download_token,
-    download_file
+    download_file,
+    list_workspaces,
+    list_solutions,
+    create_report,
+    delete_solution
 )
 
 from .insight_factory import (
@@ -52,6 +57,14 @@ from .insight_factory import (
     SelectDef,
     WhereDef,
     OrderByDef,
+)
+
+from .report_factory import (
+    ReportBuilder,
+    HeadingLevel,
+    ListType,
+    TextAlign,
+    TextFormatting
 )
 
 __all__ = [
@@ -79,6 +92,7 @@ __all__ = [
     "create_or_update_insight",
     "delete_insight",
     "delete_dataset",
+    "delete_report",
     "list_tags",
     "list_tags_recursive",
     "delete_tag",
@@ -97,6 +111,10 @@ __all__ = [
     "share_dataset_with_group",
     "generate_download_token",
     "download_file",
+    "list_workspaces",
+    "list_solutions",
+    "create_report",
+    "delete_solution",
     # Insight Factory
     "InsightBuilderV3",
     "InsightDef",
@@ -105,5 +123,11 @@ __all__ = [
     "DatasetDef",
     "SelectDef",
     "WhereDef",
-    "OrderByDef"
+    "OrderByDef",
+    # Report Factory
+    "ReportBuilder",
+    "HeadingLevel",
+    "ListType",
+    "TextAlign",
+    "TextFormatting"
 ]
