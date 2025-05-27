@@ -1201,7 +1201,6 @@ def create_report(report_body: dict, access_token: str, API_URL: str = DEFAULT_A
             "params": report_body
         }
     
-    print(payload)
 
     response = requests.post(
             f"{API_URL}/api",
