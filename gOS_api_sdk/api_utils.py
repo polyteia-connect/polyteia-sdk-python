@@ -1,5 +1,5 @@
 import io
-from typing import Optional, List
+from typing import Optional, List, Union
 import time as timer
 import requests
 import pyarrow as pa
@@ -151,8 +151,19 @@ def get_org_id_by_slug(slug: str, access_token: str, API_URL: str = DEFAULT_API_
     raise NotImplementedError("get_org_id_by_slug is not yet implemented.")
 
 
-def update_dataset(ds_id: str, access_token: str, API_URL: str = DEFAULT_API_URL, **kwargs) -> None:
-
+def update_dataset(ds_id: str, access_token: str, API_URL: str = DEFAULT_API_URL, **kwargs) -> dict:
+    """
+    Update a dataset's properties.
+    
+    Args:
+        ds_id (str): Dataset ID
+        access_token (str): Bearer token for authentication
+        API_URL (str, optional): API endpoint. Defaults to DEFAULT_API_URL.
+        **kwargs: Additional dataset properties to update
+        
+    Returns:
+        dict: API response
+    """
     headers = {
         "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json"
@@ -167,7 +178,7 @@ def update_dataset(ds_id: str, access_token: str, API_URL: str = DEFAULT_API_URL
         "description": current_dataset["description"],
         "source": current_dataset["source"],
         "slug": current_dataset["slug"],
-        }
+    }
     
     if "documentation" in current_dataset.keys():
         params["documentation"] = current_dataset["documentation"]
@@ -180,8 +191,7 @@ def update_dataset(ds_id: str, access_token: str, API_URL: str = DEFAULT_API_URL
     }
     
     update_response = requests.post(f"{API_URL}/api", headers=headers, json=payload)
-
-    handle_api_response(update_response, context="Update dataset")
+    return handle_api_response(update_response, context="Update dataset")
 
 
 def create_dataset(solution_id: str, name: str, description: str, source: str, slug: str, access_token: str, documentation: Optional[dict] = None, API_URL: str = DEFAULT_API_URL) -> str:
@@ -569,6 +579,30 @@ def get_insight(insight_id: str, access_token: str, API_URL: str = DEFAULT_API_U
     json_response = handle_api_response(response, context="Get insight")
     return json_response
 
+
+def get_insight_by_slug(solution_id: str, slug: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
+
+    headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json"
+        }
+    
+    payload = {
+        "query": "get_insight",
+            "params": {
+                "solution_id": solution_id,
+                "slug": slug
+            }
+        }
+    
+    response = requests.post(
+            f"{API_URL}/api",
+            headers=headers,
+            json=payload
+        )
+    
+    json_response = handle_api_response(response, context="Get insight by slug")
+    return json_response
 
 def find_insight_by_kpi_id(kpi_id: str, solution_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
     
@@ -1187,48 +1221,62 @@ def list_solutions(org_id: str, access_token: str, page: int = 1, size: int = 10
     json_response = handle_api_response(response, context="List solutions")
     return json_response
 
-def create_report(report_body: dict, access_token: str, API_URL: str = DEFAULT_API_URL) -> str:
-    """
-    Create a report.
-    """
+def add_insight_to_report(report_id: str, insight_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
+    """Add an insight to a report."""
     headers = {
-            "Authorization": f"Bearer {access_token}",
-            "Content-Type": "application/json"
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+    
+    payload = {
+        "command": "add_insight_to_report",
+        "params": {
+            "insight_id": insight_id,
+            "report_id": report_id
         }
+    }
+    
+    response = requests.post(
+        f"{API_URL}/api",
+        headers=headers,
+        json=payload
+    )
+    
+    return handle_api_response(response, context="Add insight to report")
+
+def create_report(report_body: dict, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
+    """Create a report and add insights to it."""
+    # Get insights from metadata
+    insights = report_body.get("metadata", {}).get("insights", [])
+    
+    # if "metadata" in report_body:
+    #     del report_body["metadata"]
+    
+    # Create the report first
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
     
     payload = {
         "command": "create_report",
-            "params": report_body
-        }
+        "params": report_body
+    }
     
-
     response = requests.post(
-            f"{API_URL}/api",
-            headers=headers,
-            json=payload
-        )
-
-    json_response = handle_api_response(response, context="Create report", required_keys=("data", "id"))
-    report_id = json_response["data"]["id"]
-
-    # add all datasets from the report metadata
-    for dataset_id in report_body["metadata"]["datasets"]:
-        payload = {
-            "command": "add_dataset_to_report",
-            "params": {
-                "dataset_id": dataset_id,
-                "report_id": report_id
-            }
-        }
-        response = requests.post(f"{API_URL}/api", headers={
-            "Authorization": f"Bearer {access_token}",
-            "Content-Type": "application/json"
-        }, json=payload)
-        
-        if response.status_code != 200:
-            print(f"Warning: Failed to add dataset {dataset_id} to report: {response.text}")
+        f"{API_URL}/api",
+        headers=headers,
+        json=payload
+    )
     
-    return report_id
+    report_response = handle_api_response(response, context="Create report")
+    report_id = report_response["data"]["id"]
+    
+    # Add each insight to the report
+    for insight_id in insights:
+        add_insight_to_report(report_id, insight_id, access_token, API_URL)
+    
+    return report_response
 
 def delete_solution(solution_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
     
