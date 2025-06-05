@@ -19,6 +19,7 @@ from .api_utils import (
     search_tags,
     add_tag_to_ressource,
     get_insight,
+    get_insight_by_slug,
     find_insight_by_kpi_id,
     create_or_update_insight,
     delete_insight,
@@ -45,6 +46,7 @@ from .api_utils import (
     list_workspaces,
     list_solutions,
     create_report,
+    add_insight_to_report,
     delete_solution
 )
 
@@ -64,7 +66,8 @@ from .report_factory import (
     HeadingLevel,
     ListType,
     TextAlign,
-    TextFormatting
+    TextFormatting,
+    ColumnLayout
 )
 
 __all__ = [
@@ -88,6 +91,7 @@ __all__ = [
     "search_tags",
     "add_tag_to_ressource",
     "get_insight",
+    "get_insight_by_slug",
     "find_insight_by_kpi_id",
     "create_or_update_insight",
     "delete_insight",
@@ -114,6 +118,7 @@ __all__ = [
     "list_workspaces",
     "list_solutions",
     "create_report",
+    "add_insight_to_report",
     "delete_solution",
     # Insight Factory
     "InsightBuilderV3",
@@ -129,5 +134,6 @@ __all__ = [
     "HeadingLevel",
     "ListType",
     "TextAlign",
-    "TextFormatting"
+    "TextFormatting",
+    "ColumnLayout"
 ]

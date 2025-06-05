@@ -73,6 +73,7 @@ class InsightDef:
     id: Optional[str] = None
     solutionId: str = ""
     name: str = ""
+    slug: str = ""
     description: str = ""
     query: QueryDef = field(default_factory=QueryDef)
     config: Optional[Dict[str, Any]] = None
@@ -88,6 +89,10 @@ class InsightBuilderV3:
 
     def set_name(self, name: str) -> 'InsightBuilderV3':
         self._insight.name = name
+        return self
+    
+    def set_slug(self, slug: str) -> 'InsightBuilderV3':
+        self._insight.slug = slug
         return self
 
     def set_description(self, desc: str) -> 'InsightBuilderV3':
@@ -121,11 +126,12 @@ class InsightBuilderV3:
                    column_id: str,
                    dataset_id: Optional[str] = None,
                    aggregate: Optional[str] = None,
-                   label: Optional[str] = None
+                   label: Optional[str] = None,
+                   id: Optional[str] = None
     ) -> 'InsightBuilderV3':
         ds_id = dataset_id or (self._insight.query.queryBuilder.datasets[0].datasetId if self._insight.query.queryBuilder.datasets else "")
         sel = SelectDef(
-            id=str(uuid.uuid4()),
+            id=id or str(uuid.uuid4()),
             datasetId=ds_id,
             columnId=column_id,
             aggregate=aggregate,
@@ -197,23 +203,11 @@ class InsightBuilderV3:
                      title: str = "",
                      subtitle: str = "",
                      ticks_layout: str = "normal") -> 'InsightBuilderV3':
-        """Configure a bar chart visualization.
-        
-        Args:
-            x_axis_column: The column for the x-axis
-            y_axis_column: The column for the y-axis
-            metric_column: The column used for grouping/stacking (optional)
-            bar_group_type: How to group bars ("group", "stack", "stack-percentage")
-            bar_layout: Bar orientation ("vertical", "horizontal")
-            show_label: Whether to show labels
-            title: Chart title
-            subtitle: Chart subtitle
-            ticks_layout: How to layout ticks ("normal", "rotate")
-        """
+        """Configure a bar chart visualization."""
         self._insight.config = {
             "type": "bar-chart",
-            "barGroupType": bar_group_type,  # group, stack, stack-percentage
-            "barLayout": bar_layout,  # vertical, horizontal
+            "barGroupType": bar_group_type,
+            "barLayout": bar_layout,
             "showLabel": show_label,
             "title": title,
             "subtitle": subtitle,
@@ -249,24 +243,29 @@ class InsightBuilderV3:
     def set_line_chart(self,
                       x_axis_column: SelectDef,
                       y_axis_column: SelectDef,
+                      metric_column: Optional[SelectDef] = None,
                       interpolation: str = "linear",
                       show_label: bool = True,
+                      stack: str = "none",
                       title: str = "",
-                      subtitle: str = "") -> 'InsightBuilderV3':
+                      subtitle: str = "",
+                      ticks_layout: str = "normal") -> 'InsightBuilderV3':
         """Configure a line chart visualization."""
         self._insight.config = {
             "type": "line-chart",
-            "interpolation": interpolation,  # linear, smooth, step
+            "lineInterpolation": interpolation,
             "showLabel": show_label,
             "title": title,
             "subtitle": subtitle,
+            "stack": stack,
             "xAxis": {
                 "column": {
                     "id": x_axis_column.id,
                     "key": x_axis_column.columnId,
                     "label": x_axis_column.label,
                     "type": "text"
-                }
+                },
+                "ticksLayout": ticks_layout
             },
             "yAxis": {
                 "column": {
@@ -276,22 +275,28 @@ class InsightBuilderV3:
                     "type": "number"
                 }
             },
+            "metric": {
+                "column": None if metric_column is None else {
+                    "id": metric_column.id,
+                    "key": metric_column.columnId,
+                    "label": metric_column.label,
+                    "type": "text"
+                }
+            },
             "filters": []
         }
         return self
 
     def set_pie_chart(self,
                      label_column: SelectDef,
-                     value_column: SelectDef,
+                     measure_column: SelectDef,
                      appearance: str = "pie",
-                     show_label: bool = True,
                      title: str = "",
                      subtitle: str = "") -> 'InsightBuilderV3':
         """Configure a pie chart visualization."""
         self._insight.config = {
             "type": "pie-chart",
-            "appearance": appearance,  # pie, donut
-            "showLabel": show_label,
+            "appearance": appearance,
             "title": title,
             "subtitle": subtitle,
             "label": {
@@ -302,11 +307,11 @@ class InsightBuilderV3:
                     "type": "text"
                 }
             },
-            "value": {
+            "measure": {
                 "column": {
-                    "id": value_column.id,
-                    "key": value_column.columnId,
-                    "label": value_column.label,
+                    "id": measure_column.id,
+                    "key": measure_column.columnId,
+                    "label": measure_column.label,
                     "type": "number"
                 }
             },
@@ -327,12 +332,12 @@ class InsightBuilderV3:
             "series": [
                 {
                     "column": {
-                        "id": col.label,
-                        "key": col.label,
+                        "id": col.id,
+                        "key": col.columnId,
                         "label": col.label,
                         "type": "number" if "%" in col.label or "anzahl" in col.label.lower() else "text"
                     },
-                    "id": f"col_{i}",  # Vereinfachte ID
+                    "id": f"col_{i}",
                     "sortable": True,
                     "title": {
                         "text": ""
@@ -345,20 +350,12 @@ class InsightBuilderV3:
 
     def set_big_number(
         self,
-        measure_column: SelectDef,  # Not optional anymore
-        aggregate: str = "sum",  # Default to sum like in wavy
+        measure_column: SelectDef,
+        aggregate: str = "sum",
         title: str = "",
         subtitle: str = ""
     ) -> 'InsightBuilderV3':
-        """Configure a big number visualization.
-        
-        Args:
-            measure_column: The column to measure
-            aggregate: Aggregation method ('sum', 'mean', 'median', 'min', 'max')
-            title: Chart title
-            subtitle: Chart subtitle
-        """
-        # Set the config structure like in wavy
+        """Configure a big number visualization."""
         self._insight.config = {
             "type": "big-number",
             "title": title,
@@ -374,33 +371,6 @@ class InsightBuilderV3:
             },
             "filters": []
         }
-
-        # If we're in SQL mode, we still need the measure_column info
-        # but the actual aggregation happens in the SQL
-        if self._insight.query.mode == "sqlEditor":
-            # Keep the existing SQL string
-            sql = self._insight.query.sqlEditor.get("sqlString", "")
-            
-            # Set up the query structure
-            self._insight.query = QueryDef(
-                mode="sqlEditor",
-                version=3,
-                sqlEditor={"sqlString": sql}
-            )
-        else:
-            # In queryBuilder mode, set up the full structure
-            self._insight.query.queryBuilder = QueryBuilderDef(
-                datasets=[
-                    DatasetDef(
-                        datasetId=measure_column.datasetId,
-                        join={"type": "inner", "on": []}
-                    )
-                ],
-                select=[measure_column],  # Use the measure_column directly
-                version=2,
-                limit=1000
-            )
-
         return self
 
     def set_map_chart(self,
@@ -409,33 +379,46 @@ class InsightBuilderV3:
                      value_column: Optional[SelectDef] = None,
                      show_label: bool = True,
                      title: str = "",
-                     subtitle: str = "") -> 'InsightBuilderV3':
+                     subtitle: str = "",
+                     layer_type: str = "choropleth",
+                     layer_title: str = "",
+                     fill_style: str = "opaque",
+                     background_map: str = "osm",
+                     enable_feature_grouping: Optional[bool] = None,
+                     group_column: Optional[SelectDef] = None) -> 'InsightBuilderV3':
         """Configure a map chart visualization.
         
         Args:
-            geometry_column: The column containing geometry data
+            geometry_column: Column containing geometry data
             label_column: Optional column for labels
-            value_column: Optional column for values (must be numeric)
+            value_column: Optional column for values
             show_label: Whether to show labels
             title: Chart title
             subtitle: Chart subtitle
+            layer_type: Type of layer ("choropleth" or "scatter")
+            layer_title: Title for the layer
+            fill_style: Fill style ("opaque" etc)
+            background_map: Background map type ("osm" etc)
+            enable_feature_grouping: Optional, for scatter maps
+            group_column: Optional column for grouping in scatter maps
         """
-        config = {
-            "type": "map-chart",
-            "title": title,
-            "subtitle": subtitle,
+        layer = {
+            "type": layer_type,
+            "fillStyle": fill_style,
+            "id": str(uuid.uuid4()).replace("-", ""),
             "showLabel": show_label,
+            "title": layer_title,
+            "tooltip": {"fields": None},
             "geometryColumn": {
                 "id": geometry_column.id,
                 "key": geometry_column.columnId,
                 "label": geometry_column.label,
-                "type": "text"  # Geometry is stored as GeoJSON text
-            },
-            "filters": []
+                "type": "text"
+            }
         }
 
         if label_column:
-            config["labelColumn"] = {
+            layer["labelColumn"] = {
                 "id": label_column.id,
                 "key": label_column.columnId,
                 "label": label_column.label,
@@ -443,14 +426,34 @@ class InsightBuilderV3:
             }
 
         if value_column:
-            config["valueColumn"] = {
+            layer["valueColumn"] = {
                 "id": value_column.id,
                 "key": value_column.columnId,
                 "label": value_column.label,
                 "type": "number"
             }
 
-        self._insight.config = config
+        # Add scatter-specific properties only if it's a scatter map
+        if layer_type == "scatter":
+            layer["enableFeatureGrouping"] = enable_feature_grouping if enable_feature_grouping is not None else False
+            layer["groupColumn"] = None
+            if group_column:
+                layer["groupColumn"] = {
+                    "id": group_column.id,
+                    "key": group_column.columnId,
+                    "label": group_column.label,
+                    "type": "text"
+                }
+
+        self._insight.config = {
+            "type": "map-chart",
+            "title": title,
+            "subtitle": subtitle,
+            "backgroundMap": background_map,
+            "version": 2,
+            "layers": [layer],
+            "filters": []
+        }
         return self
 
     def build(self) -> Dict[str, Any]:
@@ -459,6 +462,7 @@ class InsightBuilderV3:
             "solution_id": self._insight.solutionId,
             "name": self._insight.name,
             "description": self._insight.description,
+            "slug": self._insight.slug,
             "query": {
                 "version": self._insight.query.version,
                 "mode": self._insight.query.mode,
