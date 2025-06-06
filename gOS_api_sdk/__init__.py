@@ -47,7 +47,8 @@ from .api_utils import (
     list_solutions,
     create_report,
     add_insight_to_report,
-    delete_solution
+    delete_solution,
+    create_group
 )
 
 from .insight_factory import (
