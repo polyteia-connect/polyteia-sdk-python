@@ -1070,6 +1070,30 @@ def get_dataset_metadata_cols(ds_id: str, access_token: str, API_URL: str = DEFA
     ### CONFIRM
     return dataset["data"].get("metadata", {}).get("schema", {}).get("columns", {})
 
+def create_group(org_id: str, name: str, description: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> str:
+   
+    headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json"
+        }
+    
+    payload = {
+        "command": "create_group",
+            "params": {
+                "organization_id": org_id,
+                "name": name,
+                "description": description
+            }
+        }
+    
+    response = requests.post(
+            f"{API_URL}/api",
+            headers=headers,
+            json=payload
+        )
+    
+    json_response = handle_api_response(response, context="Create group", required_keys=("data", "id"))
+    return json_response["data"]["id"]
 
 def share_dataset_with_group(ds_id: str, group_id: str, role: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
     
