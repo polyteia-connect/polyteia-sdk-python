@@ -48,7 +48,8 @@ from .api_utils import (
     create_report,
     add_insight_to_report,
     delete_solution,
-    delete_workspace
+    delete_workspace,
+    create_group
 )
 
 from .insight_factory import (
