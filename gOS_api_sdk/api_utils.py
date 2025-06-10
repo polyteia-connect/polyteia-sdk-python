@@ -1323,3 +1323,25 @@ def delete_solution(solution_id: str, access_token: str, API_URL: str = DEFAULT_
         )
     
     handle_api_response(response, context="Delete solution")
+
+def delete_workspace(workspace_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
+    
+    headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json"
+        }
+
+    payload = {
+        "command": "delete_workspace",
+            "params": {
+                "id": workspace_id
+            }
+        }   
+    
+    response = requests.post(
+            f"{API_URL}/api",
+            headers=headers,
+            json=payload
+        )   
+    
+    handle_api_response(response, context="Delete workspace")

@@ -48,6 +48,7 @@ from .api_utils import (
     create_report,
     add_insight_to_report,
     delete_solution,
+    delete_workspace,
     create_group
 )
 
@@ -121,6 +122,7 @@ __all__ = [
     "create_report",
     "add_insight_to_report",
     "delete_solution",
+    "delete_workspace",
     # Insight Factory
     "InsightBuilderV3",
     "InsightDef",
