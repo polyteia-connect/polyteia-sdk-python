@@ -17,9 +17,9 @@ class ListType(Enum):
     TODO = "todo"
 
 class TextAlign(Enum):
-    LEFT = "left"
+    START = "start"
     CENTER = "center"
-    RIGHT = "right"
+    END = "end"
     JUSTIFY = "justify"
 
 @dataclass
@@ -32,9 +32,30 @@ class TextFormatting:
     highlight: bool = False
     color: Optional[str] = None
     background_color: Optional[str] = None
+    font_size: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
-        return {k: v for k, v in vars(self).items() if v}
+        """Convert formatting options to a dictionary, using wavy's property names."""
+        result = {}
+        if self.bold:
+            result["bold"] = True
+        if self.italic:
+            result["italic"] = True
+        if self.underline:
+            result["underline"] = True
+        if self.strikethrough:
+            result["strikethrough"] = True
+        if self.code:
+            result["code"] = True
+        if self.highlight:
+            result["highlight"] = True
+        if self.color:
+            result["color"] = self.color
+        if self.background_color:
+            result["backgroundColor"] = self.background_color
+        if self.font_size:
+            result["fontSize"] = self.font_size
+        return result
 
 class ColumnLayout(Enum):
     TWO_EQUAL = ["50%", "50%"]
@@ -99,13 +120,15 @@ class ReportBuilder:
         self._add_block(block)
         return self
 
-    def add_text(self, text: str, formatting: Optional[TextFormatting] = None, align: Optional[TextAlign] = None) -> 'ReportBuilder':
+    def add_text(self, text: str, formatting: Optional[TextFormatting] = None, align: Optional[TextAlign] = None, indent: Optional[int] = None, list_style_type: Optional[str] = None) -> 'ReportBuilder':
         """Add text to the report
         
         Args:
             text: The text content
             formatting: Text formatting options
             align: Text alignment
+            indent: Indentation level
+            list_style_type: List style type (e.g. "disc" for bullet points)
         """
         text_block = {"text": text}
         if formatting:
@@ -118,26 +141,32 @@ class ReportBuilder:
         }
         if align:
             block["align"] = align.value
+        if indent is not None:
+            block["indent"] = indent
+        if list_style_type:
+            block["listStyleType"] = list_style_type
             
         self._add_block(block)
         return self
 
-    def add_list(self, items: List[str], list_type: ListType = ListType.BULLET) -> 'ReportBuilder':
+    def add_list(self, items: List[str], list_type: ListType = ListType.BULLET, indent: Optional[int] = None) -> 'ReportBuilder':
         """Add a list to the report
         
         Args:
             items: List items
             list_type: Type of list (bullet, numbered, todo)
+            indent: Indentation level
         """
-        self._add_block({
-            "type": "list",
-            "id": self._generate_block_id(),
-            "listStyleType": list_type.value,
-            "children": [
-                {"type": "li", "children": [{"text": item}]}
-                for item in items
-            ]
-        })
+        for item in items:
+            block = {
+                "type": "p",
+                "id": self._generate_block_id(),
+                "children": [{"text": item}],
+                "listStyleType": list_type.value
+            }
+            if indent is not None:
+                block["indent"] = indent
+            self._add_block(block)
         return self
 
     def add_table(self, rows: List[List[str]], has_header: bool = True) -> 'ReportBuilder':
