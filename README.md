@@ -26,13 +26,13 @@ A lightweight Python SDK for interacting with the Polyteia API — designed for 
 ### Install via pip
 
 ```bash
-pip install git+https://github.com/polyteia-de/polyteia-sdk.git
+pip install git+https://github.com/polyteia-connect/polyteia-sdk.git
 ```
 
 ### Install locally for development
 
 ```bash
-git clone https://github.com/polyteia-de/polyteia-sdk.git
+git clone https://github.com/polyteia-connect/polyteia-sdk.git
 cd polyteia-sdk
 pip install -e .
 ```
@@ -77,7 +77,7 @@ The SDK depends on a few core libraries to handle HTTP requests and data seriali
 These dependencies are **automatically installed** when the SDK is installed via pip:
 
 ```bash
-pip install git+https://github.com/polyteia-de/polyteia-sdk.git
+pip install git+https://github.com/polyteia-connect/polyteia-sdk.git
 ```
 
 If needed (e.g. in a minimal environment or container), you can manually install runtime dependencies with:
@@ -89,7 +89,7 @@ pip install -r requirements.txt
 If needed, install the extra requirements with:
 
 ```bash
-pip install "git+https://github.com/polyteia-de/polyteia-sdk.git#egg=polyteia-sdk[package_name]"
+pip install "git+https://github.com/polyteia-connect/polyteia-sdk.git#egg=polyteia-sdk[package_name]"
 ```
 
 > 💡 Refer to the file `setup.py` to identify extra requirements.
