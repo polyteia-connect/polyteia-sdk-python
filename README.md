@@ -1,6 +1,6 @@
 # 📦 Polyteia Python SDK
 
-A lightweight Python SDK for interacting with the Polyteia API — designed for seamless data integration, resource management, and automation within the Polyteia platform or similar data environments.
+A lightweight Python SDK for interacting with the Polyteia API — designed for seamless data integration, resource management, and automation within the Polyteia platform or similar data environments. 
 
 
 ---
