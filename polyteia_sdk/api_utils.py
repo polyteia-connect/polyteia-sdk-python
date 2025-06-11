@@ -8,7 +8,7 @@ import polars as pl
 import pandas as pd
 import numpy as np
 
-DEFAULT_API_URL = "https://dev.polyteia.com"
+DEFAULT_API_URL = "https://app.polyteia.com"
 
 
 def to_pyarrow_table(data, columns: Optional[list[str]] = None) -> pa.Table:
@@ -288,7 +288,7 @@ def upload_file(upload_token: str, df, access_token: str, API_URL: str = DEFAULT
     handle_api_response(response, context="Upload file")
 
 
-def create_insight(insight_body: dict, access_token: str, API_URL: str = DEFAULT_API_URL) -> str:
+def create_insight(insight_body: dict, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
     """
     Create an insight.
     """
@@ -826,7 +826,7 @@ def create_org(name: str, description: str, slug: str, access_token: str, API_UR
     return json_response["data"]["id"]
 
 
-def invite_user_to_org(org_id: str, access_token: str, email: str = "cloud@polyteia.de", role: str = "admin", API_URL: str = DEFAULT_API_URL) -> None:
+def invite_user_to_org(org_id: str, access_token: str, email: str, role: str, API_URL: str = DEFAULT_API_URL) -> dict:
     
     headers = {
             "Authorization": f"Bearer {access_token}",
@@ -839,7 +839,7 @@ def invite_user_to_org(org_id: str, access_token: str, email: str = "cloud@polyt
                 "id": org_id,
                 "email": email,
                 "role": role,
-                "message": "I am inviting you to org."
+                "message": "Ich lade Sie zur einer Polyteia-Organisation ein."
             }
         }
     
@@ -959,6 +959,9 @@ def add_user_to_solution(solution_id: str, user_id: str, access_token: str, role
 
 
 def delete_org(org_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
+    """
+    Organizations can only be deleted if they contain no other resources and no users.
+    """
     
     headers = {
             "Authorization": f"Bearer {access_token}",
@@ -1005,7 +1008,7 @@ def get_solution(solution_id: str, access_token: str, API_URL: str = DEFAULT_API
     return json_response["data"]
 
 
-def update_solution_doc(solution_id: str, access_token: str, doc: dict, API_URL: str = DEFAULT_API_URL) -> None:
+def update_solution_doc(solution_id: str, access_token: str, doc: dict, API_URL: str = DEFAULT_API_URL) -> dict:
     
     headers = {
             "Authorization": f"Bearer {access_token}",
@@ -1065,9 +1068,7 @@ def update_dataset_metadata(ds_id: str, columns: dict, access_token: str, API_UR
 def get_dataset_metadata_cols(ds_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
     
     dataset = get_dataset_by_id(ds_id, access_token, API_URL)
-    #return dataset["data"]["metadata"]["schema"]["columns"]
 
-    ### CONFIRM
     return dataset["data"].get("metadata", {}).get("schema", {}).get("columns", {})
 
 def create_group(org_id: str, name: str, description: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> str:

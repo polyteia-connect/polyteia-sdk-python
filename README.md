@@ -1,6 +1,6 @@
-# 📦 gOS API TOOLKIT
+# 📦 Polyteia Python SDK
 
-A lightweight Python SDK for interacting with the gOS API — designed for seamless data integration, resource management, and automation within the Polyteia platform or similar data environments.
+A lightweight Python SDK for interacting with the Polyteia API — designed for seamless data integration, resource management, and automation within the Polyteia platform or similar data environments.
 
 
 ---
@@ -26,14 +26,14 @@ A lightweight Python SDK for interacting with the gOS API — designed for seaml
 ### Install via pip
 
 ```bash
-pip install git+https://github.com/polyteia-de/gOS-api-toolkit.git
+pip install git+https://github.com/polyteia-de/polyteia-sdk.git
 ```
 
 ### Install locally for development
 
 ```bash
-git clone https://github.com/polyteia-de/gOS-api-toolkit.git
-cd gOS-api-toolkit
+git clone https://github.com/polyteia-de/polyteia-sdk.git
+cd polyteia-sdk
 pip install -e .
 ```
 
@@ -43,9 +43,9 @@ pip install -e .
 ## 📁 Project Structure
 
 ```
-gos-api-toolkit/
+polyteia-sdk/
 │
-├── gos_api_sdk/              # SDK source package
+├── polyteia_sdk/              # SDK source package
 │   ├── __init__.py
 │   └── api_utils.py          # Core API functions
 │
@@ -77,7 +77,7 @@ The SDK depends on a few core libraries to handle HTTP requests and data seriali
 These dependencies are **automatically installed** when the SDK is installed via pip:
 
 ```bash
-pip install git+https://github.com/polyteia-de/gOS-api-toolkit.git
+pip install git+https://github.com/polyteia-de/polyteia-sdk.git
 ```
 
 If needed (e.g. in a minimal environment or container), you can manually install runtime dependencies with:
@@ -89,7 +89,7 @@ pip install -r requirements.txt
 If needed, install the extra requirements with:
 
 ```bash
-pip install "git+https://github.com/polyteia-de/gOS-api-toolkit.git#egg=gos-api-sdk[package_name]"
+pip install "git+https://github.com/polyteia-de/polyteia-sdk.git#egg=polyteia-sdk[package_name]"
 ```
 
 > 💡 Refer to the file `setup.py` to identify extra requirements.
@@ -127,13 +127,13 @@ API_URL: str = DEFAULT_API_URL
 By default, all API requests are sent to the global constant `DEFAULT_API_URL`, which is typically defined in the SDK as:
 
 ```python
-DEFAULT_API_URL = "https://dev.polyteia.com"
+DEFAULT_API_URL = "https://prd.polyteia.com"
 ```
 
 If you're working with a different environment (e.g. production), you can override the default by passing a custom URL into any function call:
 
 ```python
-API_URL = "https://prd.polyteia.com"
+API_URL = "https://dev.polyteia.com"
 api.get_org_access_token(org_id="org_xyz", PAK=PAK, API_URL=API_URL)
 ```
 
@@ -164,10 +164,15 @@ The **Personal Access Key (PAK)** is a secret token tied to your user account. I
 
 Access tokens are used to authenticate API calls on behalf of a specific **organization**.
 
+You can set them up in the Polyteia Dashboard.
+
+If you're managing multiple organizations, you can also do this programmatically. For this purpose, we can provide you with a `PAK`,
+which you can use to obtain an access token for a specific organization.
+
 To obtain one, use the `get_org_access_token()` function:
 
 ```python
-from gos_api_sdk import get_org_access_token
+from polyteia_sdk import get_org_access_token
 
 access_token = get_org_access_token(org_id="org_xyz", PAK="your_pak")
 ```
@@ -188,7 +193,7 @@ access_token = get_org_access_token(org_id="org_xyz", PAK="your_pak")
 Before using the API, authenticate using your organization ID and Personal Access Key (PAK):
 
 ```python
-from gos_api_sdk import api_utils as api
+from polyteia_sdk import api_utils as api
 
 # Replace with your organization ID and PAK
 org_id = "org_xyz"
@@ -358,12 +363,12 @@ def delete_dataset(ds_id: str, access_token: str, API_URL: str = DEFAULT_API_URL
 
 #### Add the function to `__init__.py`
 
-Make the function importable at the package level by adding it to `gos_api_sdk/__init__.py`.
+Make the function importable at the package level by adding it to `polyteia_sdk/__init__.py`.
 
 **Example:**
 
 ```python
-# gos_api_sdk/__init__.py
+# polyteia_sdk/__init__.py
 
 from .api_utils import (
     hello_world,
@@ -416,10 +421,10 @@ The merge/push automatically updates the version in all relevant files:
 
 ## ✅ Testing
 
-Tests can be placed in `gos_api_sdk/testing/`:
+Tests can be placed in `polyteia_sdk/testing/`:
 
 ```bash
-pytest gos_api_sdk/testing/
+pytest polyteia_sdk/testing/
 ```
 
 > Note: this folder is excluded via `.gitignore`.
