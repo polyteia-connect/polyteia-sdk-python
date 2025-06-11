@@ -6,7 +6,7 @@ def load_requirements(filename):
         return f.read().splitlines()
 
 setup(
-    name="gOS-api-sdk",
+    name="polyteia-sdk",
     version="0.1.12",
     packages=find_packages(),
     install_requires=load_requirements("requirements.txt"),
@@ -19,7 +19,7 @@ setup(
     description="Python SDK for the gOS reporting dashboard API",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
-    url="https://github.com/polyteia-de/gOS-api-toolkit.git",
+    url="https://github.com/polyteia-connect/polyteia-sdk.git",
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: None",
