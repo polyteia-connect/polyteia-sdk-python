@@ -1,73 +1,11 @@
 import io
-from typing import Optional, List, Union
+from typing import Optional, List
 import time as timer
 import requests
 import pyarrow as pa
 import pyarrow.parquet as pq
-import polars as pl
-import pandas as pd
-import numpy as np
 
 DEFAULT_API_URL = "https://app.polyteia.com"
-
-
-def to_pyarrow_table(data, columns: Optional[list[str]] = None) -> pa.Table:
-    """
-    Converts supported input formats into a pyarrow.Table.
-
-    Supported input types:
-    - polars.DataFrame
-    - pandas.DataFrame
-    - pyarrow.Table
-    - pyspark.sql.dataframe.DataFrame
-    - list[dict] or single dict
-    - list[list] (requires 'columns')
-    - numpy.ndarray (2D, requires 'columns')
-
-    Args:
-        data: The input data to convert.
-        columns (list[str], optional): Required for list-of-lists or NumPy input.
-
-    Returns:
-        pyarrow.Table: Converted Arrow table for Parquet upload.
-
-    Raises:
-        TypeError: For unsupported formats.
-        ValueError: For missing column names in ambiguous formats.
-    """
-    if isinstance(data, pa.Table):
-        return data
-    
-    elif isinstance(data, pl.DataFrame):
-        return data.to_arrow()
-    
-    elif isinstance(data, pd.DataFrame):
-        return pa.Table.from_pandas(data)
-    
-    elif "pyspark.sql.dataframe.DataFrame" in str(type(data)):
-        # Avoid hard dependency on pyspark — detect by type string
-        pandas_df = data.toPandas()
-        return pa.Table.from_pandas(pandas_df)
-    
-    elif isinstance(data, dict):
-        return pa.Table.from_pandas(pd.DataFrame([data]))
-    
-    elif isinstance(data, list):
-        if all(isinstance(row, dict) for row in data):
-            return pa.Table.from_pandas(pd.DataFrame(data))
-        elif all(isinstance(row, (list, tuple)) for row in data):
-            if columns is None:
-                raise ValueError("Column names must be provided for list-of-lists input.")
-            return pa.Table.from_pandas(pd.DataFrame(data, columns=columns))
-        
-    elif isinstance(data, np.ndarray):
-        if data.ndim != 2:
-            raise ValueError("Only 2D NumPy arrays are supported.")
-        if columns is None:
-            raise ValueError("Column names must be provided for NumPy array input.")
-        return pa.Table.from_pandas(pd.DataFrame(data, columns=columns))
-
-    raise TypeError(f"Unsupported input type for conversion to pyarrow.Table: {type(data)}")
 
 
 def handle_api_response(response, *, context: str = "API call", expected_status_codes: tuple = (200, 201), required_keys: tuple = None) -> dict:
@@ -254,18 +192,14 @@ def generate_upload_token(ds_id: str, content_type: str, access_token: str, API_
     return json_response["data"]["token"]
 
 
-#def upload_file(upload_token: str, df: pl.DataFrame, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
-def upload_file(upload_token: str, df, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
+def upload_file(upload_token: str, df: pa.Table, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
     """
     Upload a file to the dataset. Input must be convertible to pyarrow.Table.
     """
-    # Convert DataFrame to a PyArrow table
-    #table = df.to_arrow()
-    table = to_pyarrow_table(df)
 
     # Write the Arrow table to a Parquet file in a BytesIO buffer
     buffer = io.BytesIO()
-    pq.write_table(table, buffer)
+    pq.write_table(df, buffer)
 
     buffer.seek(0)
     headers = {
@@ -1154,23 +1088,21 @@ def generate_download_token(ds_id: str, access_token: str, API_URL: str = DEFAUL
     return json_response["data"]["token"]
 
 
-def download_file(
+def download_file_to_arrow(
     download_token: str,
     access_token: str,
     API_URL: str = DEFAULT_API_URL,
-    output_format: str = "polars"  # Options: "polars", "pandas", "arrow"
-):
+    ) -> pa.Table:
     """
-    Download a Parquet file using the download token and return it in the desired format.
+    Download a file using the download token and return it as a PyArrow table.
 
     Args:
         download_token (str): The secure download token.
         access_token (str): Bearer token for authentication.
         API_URL (str): The base API endpoint.
-        output_format (str): Format of the returned data. One of: "polars", "pandas", "arrow".
 
     Returns:
-        DataFrame or Table in the specified format.
+        pyarrow.Table: The downloaded file as a PyArrow table.
     """
     url = f"{API_URL}/download?token={download_token}"
     headers = {
@@ -1184,15 +1116,7 @@ def download_file(
 
     buffer = io.BytesIO(response.content)
 
-    if output_format == "polars":
-        return pl.read_parquet(buffer)
-    elif output_format == "pandas":
-        table = pq.read_table(buffer)
-        return table.to_pandas()
-    elif output_format == "arrow":
-        return pq.read_table(buffer)
-    else:
-        raise ValueError(f"Unsupported output_format: {output_format}. Choose from 'polars', 'pandas', 'arrow'.")
+    return pq.read_table(buffer)
     
 def list_workspaces(org_id: str, access_token: str, page: int = 1, size: int = 100, search: str = "", API_URL: str = DEFAULT_API_URL) -> dict:
     

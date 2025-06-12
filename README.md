@@ -12,7 +12,7 @@ A lightweight Python SDK for interacting with the Polyteia API — designed for 
 * 📊 Dataset operations: create, update, delete, metadata handling, and bulk listing
 * 📈 Insight lifecycle support: create, update, retrieve, find-by-KPI, delete
 * 🏷️ Comprehensive tagging: create, assign, search, list, delete
-* 📁 Upload/download Parquet files via Polars and Arrow
+* 📁 Upload/download Parquet files via PyArrow
 * 🔁 Robust error handling using a shared `handle_api_response` utility
 * 🔎 Resource discovery: list datasets, insights, tags, solutions recursively
 * ⚙️ Modular and extensible — easily add new API-bound commands
@@ -68,10 +68,6 @@ The SDK depends on a few core libraries to handle HTTP requests and data seriali
 
 * `requests`
 * `pyarrow`
-* `polars`
-* `pandas`
-* `numpy`
-* `pyspark` - Optional
 
 
 These dependencies are **automatically installed** when the SDK is installed via pip:
@@ -139,40 +135,44 @@ Other API URLs are only used for testing purposes, so you will not usually need 
 
 Before you can interact with the API using this SDK, you need to authenticate your requests. This is done using:
 
-1. A **Personal Access Key (PAK)** — your master credential
+1. A **Personal Access Key (PAK)** — your master credential used if you are managing multiple organizations
 2. An **Access Token** — scoped to a specific organization
-
-### 🔑 Personal Access Key (PAK)
-
-The **Personal Access Key (PAK)** is a secret token tied to your user account. It's used to securely request access tokens for specific organizations.
-
-* **You must generate your PAK manually.**
-* Refer to the official guide:
-  👉 [Zugriffsschlüssel (PAK) erstellen – Polyteia Docs](https://docs.polyteia.com/konto/zugriffsschlussel-pak)
-
-> 🛑 Keep your PAK secure. Do not hardcode or expose it in shared code.
 
 ### 🪪 Access Token (Org-Scoped)
 
 Access tokens are used to authenticate API calls on behalf of a specific **organization**.
 
-You can set them up in the Polyteia Dashboard.
+You can set them up in the Polyteia Dashboard:
 
-If you're managing multiple organizations, you can also do this programmatically. For this purpose, we can provide you with a `PAK`,
-which you can use to obtain an access token for a specific organization.
+The **Personal Access Key (PAK)** is a secret token tied to your user account. It's used to securely request access tokens for specific organizations.
 
-To obtain one, use the `get_org_access_token()` function:
+* **You can generate your PAK manually.**
+* Refer to the official guide:
+  👉 [Zugriffsschlüssel (PAK) erstellen – Polyteia Docs](https://docs.polyteia.com/konto/zugriffsschlussel-pak)
+
+* **Or you can generate your PAK using your global PAK (see below).**
+
+Use the `get_org_access_token()` function:
 
 ```python
 from polyteia_sdk_python import get_org_access_token
 
-access_token = get_org_access_token(org_id="org_xyz", PAK="your_pak")
+access_token = get_org_access_token(org_id="org_xyz", PAK="your_globalpak")
 ```
+
+> 🛑 Keep your PAK secure. Do not hardcode or expose it in shared code.
+
+
+### 🔑 Global Personal Access Key (PAK)
+
+If you're managing multiple organizations, you can also do this programmatically. For this purpose, we can provide you with a `PAK`,
+which you can use to obtain an access token for a specific organization.
+
 
 #### ⚠️ Important:
 
 * Access tokens are **scoped to a specific organization**.
-* If you're working with multiple `org_id`s, you must obtain a **separate access token** for each one using the same `PAK`.
+* If you're working with multiple `org_id`s, you must obtain a **separate access token** for each one using the same global `PAK`.
 
 
 ---
@@ -220,16 +220,19 @@ ds_id = api.create_dataset(
 
 ### Example 3: Upload a DataFrame to the Dataset
 
-Once the dataset is created, upload a Polars DataFrame using a generated upload token:
+Once the dataset is created, upload a PyArrow table using a generated upload token.
+Most data processing libraries can be used to convert data to a PyArrow table.
 
 ```python
-import polars as pl
 
-# Prepare your DataFrame
+# Prepare your DataFrame, e.g. with Polars
 df = pl.DataFrame({
     "jahr": [2021, 2022],
     "betrag": [12345.67, 23456.78]
 })
+
+# Convert to PyArrow table
+df = df.to_arrow()
 
 # Generate upload token
 upload_token = api.generate_upload_token(
@@ -250,30 +253,12 @@ api.upload_file(upload_token, df, access_token=access_token)
 
 ### Input types for Uploading Data
 
-The SDK’s `upload_file()` function accepts a variety of input types, giving you flexibility across different data processing workflows. Internally, all inputs are converted to a `pyarrow.Table` for efficient Parquet-based upload.
-
-| Format Type       | Accepted Object         | Notes                                       |
-| ----------------- | ----------------------- | ------------------------------------------- |
-| Polars DataFrame  | `polars.DataFrame`      | Recommended internal format                 |
-| Pandas DataFrame  | `pandas.DataFrame`      | Automatically converted to Arrow            |
-| PyArrow Table     | `pyarrow.Table`         | Used as-is                                  |
-| PySpark DataFrame | `pyspark.sql.DataFrame` | Automatically converted via `.toPandas()`   |
-| List of dicts     | `list[dict]`            | Each dict = one row                         |
-| Single dictionary | `dict`                  | Treated as a single-row table               |
-| List of lists     | `list[list]`            | Requires `columns` argument to infer schema |
-| NumPy array       | `numpy.ndarray` (2D)    | Requires `columns` argument                 |
-
-> 💡 When using list-of-lists or NumPy arrays, the `columns` parameter **must be provided** to infer column names.
+The SDK’s `upload_file()` function accepts a `pyarrow.Table` for efficient Parquet-based upload.
 
 ### Output Types for Downloading Data
 
-The `download_file()` function supports multiple return formats based on the `output_format` argument. By default, it returns a `polars.DataFrame`.
-
-| Output Format    | Argument Value | Returned Object    |
-| ---------------- | -------------- | ------------------ |
-| Polars DataFrame | `"polars"`     | `polars.DataFrame` |
-| Pandas DataFrame | `"pandas"`     | `pandas.DataFrame` |
-| PyArrow Table    | `"arrow"`      | `pyarrow.Table`    |
+The `download_file_to_arrow()` function returns a `pyarrow.Table`. The function so far has mainly been tested with Parquet files.
+Since Polyteia supports various file types, incl. csv, json and others, this function might be extended to support other file types in the future.
 
 
 ---
