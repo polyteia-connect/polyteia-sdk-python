@@ -1,5 +1,4 @@
 from .api_utils import (
-    to_pyarrow_table,
     handle_api_response,
     get_org_access_token,
     get_org_id_by_slug,
@@ -42,7 +41,7 @@ from .api_utils import (
     get_dataset_metadata_cols,
     share_dataset_with_group,
     generate_download_token,
-    download_file,
+    download_file_to_arrow,
     list_workspaces,
     list_solutions,
     create_report,
