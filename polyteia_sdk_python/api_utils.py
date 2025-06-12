@@ -206,7 +206,7 @@ def upload_file(upload_token: str, df: pa.Table, access_token: str, API_URL: str
         "Authorization": f"Bearer {access_token}",
         "X-Upload-Token": upload_token
     }
-    payload = {}
+    payload: dict[str, str] = {}
 
     files = [
         ('file', ('filename', buffer, 'application/octet-stream'))
