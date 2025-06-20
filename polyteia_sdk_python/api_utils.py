@@ -1300,7 +1300,7 @@ def add_group_to_workspace(ws_id: str, group_id: str, role: str, access_token: s
             json=payload
         )
     
-    handle_api_response(response, context="Share dataset with group")
+    handle_api_response(response, context="Add group to workspace")
 
 def add_group_to_solution(sol_id: str, group_id: str, role: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
     
