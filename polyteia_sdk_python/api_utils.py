@@ -1270,3 +1270,203 @@ def delete_workspace(workspace_id: str, access_token: str, API_URL: str = DEFAUL
         )   
     
     handle_api_response(response, context="Delete workspace")
+
+def add_group_to_workspace(ws_id: str, group_id: str, role: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
+    
+    headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json"
+        }
+    
+    params = {
+            "resource_id": ws_id,
+            "assignments": [
+                {
+                    "id": group_id,
+                    "role": role
+                }
+            ],
+            "unassignments": []
+        }
+    
+    payload = {
+        "command": "bulk_role_update",
+            "params": params
+        }
+    
+    response = requests.post(
+            f"{API_URL}/api",
+            headers=headers,
+            json=payload
+        )
+    
+    handle_api_response(response, context="Share dataset with group")
+
+def add_group_to_solution(sol_id: str, group_id: str, role: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
+    
+    headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json"
+        }
+    
+    params = {
+            "resource_id": sol_id,
+            "assignments": [
+                {
+                    "id": group_id,
+                    "role": role
+                }
+            ],
+            "unassignments": []
+        }
+    
+    payload = {
+        "command": "bulk_role_update",
+            "params": params
+        }
+    
+    response = requests.post(
+            f"{API_URL}/api",
+            headers=headers,
+            json=payload
+        )
+    
+    handle_api_response(response, context="Add group to solution")
+
+def add_user_to_group(group_id: str, user_id: str, role: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
+    
+    headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json"
+        }
+    
+    params = {
+            "resource_id": group_id,
+            "assignments": [
+                {
+                    "id": user_id,
+                    "role": role
+                }
+            ],
+            "unassignments": []
+        }
+    
+    payload = {
+        "command": "bulk_role_update",
+            "params": params
+        }
+    
+    response = requests.post(
+            f"{API_URL}/api",
+            headers=headers,
+            json=payload
+        )
+
+    handle_api_response(response, context="Add user to group")
+
+def check_group(group_id: str, access_token: str, filters: Optional[dict] = None, API_URL: str = DEFAULT_API_URL) -> dict:
+    headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json"
+        }
+    
+    payload = {
+        "query": "get_users_or_groups_for_resource",
+            "params": {
+                "resource_id": group_id
+            }
+        }
+
+    if filters:
+        payload["params"]["filters"] = filters
+    
+    response = requests.post(
+            f"{API_URL}/api",
+            headers=headers,
+            json=payload
+        )
+
+    return handle_api_response(response, context="Check group")
+
+def share_report_with_group(report_id: str, group_id: str, role: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
+    
+    headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json"
+        }
+    
+    params = {
+        "resource_id": report_id,
+        "assignments": [
+            {
+                "id": group_id,
+                "role": role
+            }
+        ],
+        "unassignments": []
+    }
+    
+    payload = {
+        "command": "bulk_role_update",
+            "params": params
+        }
+    
+    response = requests.post(
+            f"{API_URL}/api",
+            headers=headers,
+            json=payload
+        )
+    
+    handle_api_response(response, context="Share report with group")
+
+def list_org_members(org_id: str, access_token: str, page: int = 1, size: int = 100, search: str = "", filters: Optional[dict] = None,  API_URL: str = DEFAULT_API_URL) -> List[str]:
+    
+    headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json"
+        }
+    
+    payload = {
+        "query": "list_organization_members",
+            "params": {
+                "id": org_id,
+                "page": page,
+                "size": size,
+                "search": search,
+                "order": []
+            }
+        }
+    
+    if filters:
+        payload["params"]["filters"] = filters
+    
+    response = requests.post(
+            f"{API_URL}/api",
+            headers=headers,
+            json=payload
+    )
+
+    return handle_api_response(response, context="List org members")
+
+def get_org_user_by_user_id(org_id: str, user_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
+    
+    headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json"
+        }
+    
+    payload = {
+        "query": "get_organization_member",
+            "params": {
+                "id": org_id,
+                "user_id": user_id
+            }
+        }
+    
+    response = requests.post(
+            f"{API_URL}/api",
+            headers=headers,
+            json=payload
+        )
+    
+    return handle_api_response(response, context="Get org user by user id")

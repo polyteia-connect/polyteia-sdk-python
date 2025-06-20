@@ -48,7 +48,14 @@ from .api_utils import (
     add_insight_to_report,
     delete_solution,
     delete_workspace,
-    create_group
+    create_group,
+    add_group_to_workspace,
+    add_group_to_solution,
+    add_user_to_group,
+    check_group,
+    share_report_with_group,
+    list_org_members,
+    get_org_user_by_user_id
 )
 
 from .insight_factory import (
@@ -122,6 +129,13 @@ __all__ = [
     "add_insight_to_report",
     "delete_solution",
     "delete_workspace",
+    "add_group_to_workspace",
+    "add_group_to_solution",
+    "add_user_to_group",
+    "check_group",
+    "share_report_with_group",
+    "list_org_members",
+    "get_org_user_by_user_id"
     # Insight Factory
     "InsightBuilderV3",
     "InsightDef",
