@@ -1470,3 +1470,55 @@ def get_org_user_by_user_id(org_id: str, user_id: str, access_token: str, API_UR
         )
     
     return handle_api_response(response, context="Get org user by user id")
+
+def list_groups(org_id: str, access_token: str, page: int = 1, size: int = 100, search: str = "", filters: Optional[dict] = None,  API_URL: str = DEFAULT_API_URL) -> List[str]:
+    
+    headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json"
+        }
+    
+    payload = {
+        "query": "list_groups",
+            "params": {
+                "organization_id": org_id,
+                "page": page,
+                "size": size,
+                "search": search,
+                "order": []
+            }
+        }
+    
+    if filters:
+        payload["params"]["filters"] = filters
+    
+    response = requests.post(
+            f"{API_URL}/api",
+            headers=headers,
+            json=payload
+    )
+
+    return handle_api_response(response, context="List groups")["data"]["items"]
+
+def delete_group(org_id: str, group_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
+    
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+    
+    payload = {
+        "command": "delete_group",
+        "params": {
+            "organization_id": org_id,
+            "id": group_id
+        }
+    }
+    
+    response = requests.post(
+        f"{API_URL}/api",
+        headers=headers,
+        json=payload
+    )
+
+    handle_api_response(response, context="Delete group")

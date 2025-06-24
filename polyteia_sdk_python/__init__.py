@@ -55,7 +55,9 @@ from .api_utils import (
     check_group,
     share_report_with_group,
     list_org_members,
-    get_org_user_by_user_id
+    get_org_user_by_user_id,
+    list_groups,
+    delete_group
 )
 
 from .insight_factory import (
@@ -135,7 +137,9 @@ __all__ = [
     "check_group",
     "share_report_with_group",
     "list_org_members",
-    "get_org_user_by_user_id"
+    "get_org_user_by_user_id",
+    "list_groups",
+    "delete_group",
     # Insight Factory
     "InsightBuilderV3",
     "InsightDef",
