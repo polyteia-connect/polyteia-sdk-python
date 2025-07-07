@@ -1522,3 +1522,25 @@ def delete_group(org_id: str, group_id: str, access_token: str, API_URL: str = D
     )
 
     handle_api_response(response, context="Delete group")
+
+def get_report(report_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
+    
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+    
+    payload = {
+        "query": "get_resource",
+        "params": {
+            "id": report_id
+        }
+    }
+    
+    response = requests.post(
+        f"{API_URL}/api",
+        headers=headers,
+        json=payload
+    )
+
+    return handle_api_response(response, context="Get report")
