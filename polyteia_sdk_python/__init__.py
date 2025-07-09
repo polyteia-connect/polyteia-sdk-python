@@ -57,7 +57,8 @@ from .api_utils import (
     list_org_members,
     get_org_user_by_user_id,
     list_groups,
-    delete_group
+    delete_group,
+    get_report
 )
 
 from .insight_factory import (
@@ -140,6 +141,7 @@ __all__ = [
     "get_org_user_by_user_id",
     "list_groups",
     "delete_group",
+    "get_report",
     # Insight Factory
     "InsightBuilderV3",
     "InsightDef",
