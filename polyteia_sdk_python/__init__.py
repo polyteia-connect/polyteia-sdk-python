@@ -141,7 +141,7 @@ __all__ = [
     "get_org_user_by_user_id",
     "list_groups",
     "delete_group",
-    "get_report"
+    "get_report",
     # Insight Factory
     "InsightBuilderV3",
     "InsightDef",
