@@ -203,6 +203,35 @@ class InsightBuilderBase:
         self._insight.query.queryBuilder.orderBy.append(ob)
         return self
 
+    def set_limit(self, limit: int):
+        """Set a limit on the number of results returned by the query."""
+        if limit < 0:
+            raise ValueError("Limit must be a non-negative integer.")
+        self._insight.query.queryBuilder.limit = limit
+        return self
+
+    def add_filter_defs(self, filters: List[Dict[str, Any]]):
+        """Add multiple filters to the query."""
+        for filter_def in filters:
+            self.add_filter(
+                column_id=filter_def["column_id"],
+                operator=filter_def["operator"],
+                value=filter_def["value"],
+                dataset_id=filter_def.get("dataset_id")
+            )
+        return self
+
+    def add_select_defs(self, selects: List[Dict[str, Any]]):
+        """Add multiple select definitions to the query."""
+        for select_def in selects:
+            self.add_select(
+                column_id=select_def["column_id"],
+                dataset_id=select_def.get("dataset_id"),
+                aggregate=select_def.get("aggregate"),
+                label=select_def.get("label"),
+                id=select_def.get("id")
+            )
+        return self
     def set_config(self, cfg: Dict[str, Any]):
         self._insight.config = cfg
         return self
