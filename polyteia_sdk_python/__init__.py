@@ -62,6 +62,7 @@ from .api_utils import (
 )
 
 from .insight_factory import (
+    InsightBuilder,
     InsightBuilderV3,
     InsightDef,
     QueryDef,
@@ -143,6 +144,7 @@ __all__ = [
     "delete_group",
     "get_report",
     # Insight Factory
+    "InsightBuilder",
     "InsightBuilderV3",
     "InsightDef",
     "QueryDef",
