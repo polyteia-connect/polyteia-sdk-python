@@ -210,30 +210,49 @@ class InsightBuilderBase:
         self._insight.query.queryBuilder.limit = limit
         return self
 
-    def add_filter_defs(self, filters: List[Dict[str, Any]]):
-        """Add multiple filters to the query."""
-        for filter_def in filters:
-            self.add_filter(
-                column_id=filter_def["column_id"],
-                operator=filter_def["operator"],
-                value=filter_def["value"],
-                dataset_id=filter_def.get("dataset_id")
-            )
+    def add_filter_defs(self, filters: List[WhereDef]):
+        """Bulk-add pre-built WhereDef objects."""
+        self._insight.query.queryBuilder.where.extend(filters)
         return self
 
-    def add_select_defs(self, selects: List[Dict[str, Any]]):
-        """Add multiple select definitions to the query."""
-        for select_def in selects:
-            self.add_select(
-                column_id=select_def["column_id"],
-                dataset_id=select_def.get("dataset_id"),
-                aggregate=select_def.get("aggregate"),
-                label=select_def.get("label"),
-                id=select_def.get("id")
-            )
+    def add_select_defs(self, selects: List[SelectDef]):
+        """Bulk-add pre-built SelectDef objects."""
+        self._insight.query.queryBuilder.select.extend(selects)
         return self
+
     def set_config(self, cfg: Dict[str, Any]):
+        """Config defines the vizualization settings, this might
+        need its own builder in the future."""
         self._insight.config = cfg
+        return self
+
+    def set_table(self,
+                 columns: List[SelectDef],
+                 show_header: bool = True,
+                 title: str = "",
+                 subtitle: str = ""):
+        """Configure a table visualization."""
+        self._insight.config = {
+            "type": "table",
+            "subtitle": subtitle,
+            "title": title,
+            "series": [
+                {
+                    "column": {
+                        "id": col.id,
+                        "key": col.columnId,
+                        "label": col.label,
+                        "type": "number" if "%" in col.label or "anzahl" in col.label.lower() else "text"
+                    },
+                    "id": f"col_{i}",
+                    "sortable": True,
+                    "title": {
+                        "text": ""
+                    }
+                } for i, col in enumerate(columns)
+            ],
+            "filters": []
+        }
         return self
 
     def set_big_number(self, measure_column: SelectDef, aggregate: str = "sum",
@@ -394,22 +413,7 @@ class InsightBuilderBase:
                      background_map: str = "osm",
                      enable_feature_grouping: Optional[bool] = None,
                      group_column: Optional[SelectDef] = None):
-        """Configure a map chart visualization.
-        
-        Args:
-            geometry_column: Column containing geometry data
-            label_column: Optional column for labels
-            value_column: Optional column for values
-            show_label: Whether to show labels
-            title: Chart title
-            subtitle: Chart subtitle
-            layer_type: Type of layer ("choropleth" or "scatter")
-            layer_title: Title for the layer
-            fill_style: Fill style ("opaque" etc)
-            background_map: Background map type ("osm" etc)
-            enable_feature_grouping: Optional, for scatter maps
-            group_column: Optional column for grouping in scatter maps
-        """
+        """Configure a map chart visualization."""
         layer = {
             "type": layer_type,
             "fillStyle": fill_style,
@@ -441,7 +445,6 @@ class InsightBuilderBase:
                 "type": "number"
             }
 
-        # Add scatter-specific properties only if it's a scatter map
         if layer_type == "scatter":
             layer["enableFeatureGrouping"] = enable_feature_grouping if enable_feature_grouping is not None else False
             layer["groupColumn"] = None
@@ -464,6 +467,7 @@ class InsightBuilderBase:
         }
         return self
 
+
 class InsightBuilderV3(InsightBuilderBase):
     """Version 3 of the InsightBuilder (Deprecated)."""
     
@@ -481,7 +485,6 @@ class InsightBuilderV3(InsightBuilderBase):
         return self
 
     def build(self) -> Dict[str, Any]:
-        # Original V3 build logic
         insight = {
             "solution_id": self._insight.solutionId,
             "name": self._insight.name,
@@ -516,6 +519,7 @@ class InsightBuilderV3(InsightBuilderBase):
             "config": self._insight.config
         }
         return insight
+
 
 class InsightBuilder(InsightBuilderBase):
     """Current version of the InsightBuilder."""
@@ -556,7 +560,6 @@ class InsightBuilder(InsightBuilderBase):
         return self
 
     def build(self) -> Dict[str, Any]:
-        # Current version build logic
         insight = {
             "solution_id": self._insight.solutionId,
             "name": self._insight.name,
