@@ -1,4 +1,5 @@
 import io
+from pathlib import Path
 from typing import Optional, List
 import time as timer
 import requests
@@ -8,7 +9,7 @@ import pyarrow.parquet as pq
 DEFAULT_API_URL = "https://app.polyteia.com"
 
 
-def handle_api_response(response, *, context: str = "API call", expected_status_codes: tuple = (200, 201), required_keys: tuple = None) -> dict:
+def handle_api_response(response, *, context: str = "API call", expected_status_codes: tuple = (200, 201), required_keys: Optional[tuple] = None) -> dict:
     """
     Validates an HTTP response from the API.
 
@@ -141,7 +142,7 @@ def create_dataset(solution_id: str, name: str, description: str, source: str, s
             "Content-Type": "application/json"
         }
     
-    dataset_payload = {
+    dataset_payload: dict = {
         "command": "create_dataset",
         "params": {
                 "name": name,
@@ -1370,7 +1371,7 @@ def check_group(group_id: str, access_token: str, filters: Optional[dict] = None
             "Content-Type": "application/json"
         }
     
-    payload = {
+    payload: dict = {
         "query": "get_users_or_groups_for_resource",
             "params": {
                 "resource_id": group_id
@@ -1419,14 +1420,14 @@ def share_report_with_group(report_id: str, group_id: str, role: str, access_tok
     
     handle_api_response(response, context="Share report with group")
 
-def list_org_members(org_id: str, access_token: str, page: int = 1, size: int = 100, search: str = "", filters: Optional[dict] = None,  API_URL: str = DEFAULT_API_URL) -> List[str]:
+def list_org_members(org_id: str, access_token: str, page: int = 1, size: int = 100, search: str = "", filters: Optional[dict] = None,  API_URL: str = DEFAULT_API_URL) -> dict:
     
     headers = {
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json"
         }
     
-    payload = {
+    payload: dict = {
         "query": "list_organization_members",
             "params": {
                 "id": org_id,
@@ -1471,14 +1472,14 @@ def get_org_user_by_user_id(org_id: str, user_id: str, access_token: str, API_UR
     
     return handle_api_response(response, context="Get org user by user id")
 
-def list_groups(org_id: str, access_token: str, page: int = 1, size: int = 100, search: str = "", filters: Optional[dict] = None,  API_URL: str = DEFAULT_API_URL) -> List[str]:
+def list_groups(org_id: str, access_token: str, page: int = 1, size: int = 100, search: str = "", filters: Optional[dict] = None,  API_URL: str = DEFAULT_API_URL) -> List[dict]:
     
     headers = {
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json"
         }
     
-    payload = {
+    payload: dict = {
         "query": "list_groups",
             "params": {
                 "organization_id": org_id,
@@ -1544,3 +1545,223 @@ def get_report(report_id: str, access_token: str, API_URL: str = DEFAULT_API_URL
     )
 
     return handle_api_response(response, context="Get report")
+
+
+def remove_insight_from_report(report_id: str, insight_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
+    """Remove an insight from a report."""
+
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "command": "remove_insight_from_report",
+        "params": {
+            "insight_id": insight_id,
+            "report_id": report_id
+        }
+    }
+    response = requests.post(
+        f"{API_URL}/api",
+        headers=headers,
+        json=payload,
+        timeout=50
+    )
+    return handle_api_response(response, context="Remove insight from report")
+
+
+def extract_insights_from_structure(structure: dict | list) -> set:
+    """
+    Recursively extract all insight IDs from a report structure.
+
+    The structure can be deeply nested with various types of blocks (sections, pages, columns, widgets etc.).
+    We're looking for widget blocks that have widgetData.insightId.
+
+    This is a helper function needed for updating reports
+
+    Args:
+        structure (Union[dict, list]): Report structure (can be dict or list at top level)
+
+    Returns:
+        set: Set of insight IDs found in the structure
+    """
+    insights = set()
+
+    if isinstance(structure, dict):
+        # Check if this is a widget with an insight
+        if structure.get("type") == "widget" and "widgetData" in structure:
+            insight_id = structure["widgetData"].get("insightId")
+            if insight_id:
+                insights.add(insight_id)
+
+        # Recursively check all nested structures
+        for value in structure.values():
+            if isinstance(value, (dict, list)):
+                insights.update(extract_insights_from_structure(value))
+    
+    elif isinstance(structure, list):
+        # Recursively check all items
+        for item in structure:
+            if isinstance(item, (dict, list)):
+                insights.update(extract_insights_from_structure(item))
+
+    return insights
+
+
+def update_report(report_id: str, access_token: str, API_URL: str = DEFAULT_API_URL, **kwargs) -> dict:
+    """
+    Flexibly update a report via the provided kwargs.
+
+    Args:
+        report_id (str): Report ID
+        access_token (str): Bearer token for authentication
+        API_URL (str): API endpoint
+        **kwargs: Additional report properties to update
+
+    Returns:
+        dict: API response from the update operation
+
+    Note:
+        The function manages insights by:
+        1. Getting current insights from metadata
+        2. If a new structure is provided, extracts actually used insights from it
+        3. Adds/removes insights as needed (API handles metadata updates)
+    """
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+
+    current_report = get_report(report_id, access_token, API_URL)["data"]
+    current_insights = set(current_report.get("metadata", {}).get("insights", []))
+
+    params = {
+        "id": report_id,
+        "name": current_report["name"],
+        "description": current_report["description"],
+        "version": current_report["version"],
+        "structure": current_report["structure"]
+    }
+
+    if "metadata" in current_report:
+        params["metadata"] = current_report["metadata"]
+
+    updated_params = {**params, **kwargs}
+
+    payload = {
+        "command": "update_report",
+        "params": updated_params
+    }
+
+    update_response = requests.post(f"{API_URL}/api", headers=headers, json=payload)
+    update_result = handle_api_response(update_response, context="Update report")
+
+    if "structure" in kwargs:
+        new_insights = extract_insights_from_structure(kwargs["structure"])
+
+        insights_to_add = new_insights - current_insights
+        insights_to_remove = current_insights - new_insights
+
+        for insight_id in insights_to_add:
+            try:
+                add_insight_to_report(report_id, insight_id, access_token, API_URL)
+            except Exception as e:
+                print(f"Warning: Failed to add insight {insight_id}: {str(e)}")
+
+        for insight_id in insights_to_remove:
+            try:
+                remove_insight_from_report(report_id, insight_id, access_token, API_URL)
+            except Exception as e:
+                print(f"Warning: Failed to remove insight {insight_id}: {str(e)}")
+
+    return update_result
+
+
+def get_image_upload_token(report_id: str, access_token: str, content_type: str, API_URL: str = DEFAULT_API_URL) -> dict:
+    """Generate an upload token for images, e.g. logos in reports
+    """
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "command": "generate_report_image_upload_token",
+        "params": {"id": report_id, "content_type": content_type},
+    }
+    response = requests.post(
+        f"{API_URL}/api/generate_report_image_upload_token",
+        headers=headers,
+        json=payload,
+        timeout=60,
+    )
+    r = handle_api_response(response, context="Get image upload token")
+
+    data = r["data"]
+
+    return {
+        "upload_url": data.get("upload_url", f"{API_URL}/upload"),
+        "token": data["token"],
+        "filename": data["filename"],
+    }
+
+def upload_local_file(upload_url: str, upload_token: str, local_path: str, content_type: str) -> None:
+    """Upload a file from a local storage
+    Needs an upload url and upload token generated by get_image_upload_token
+    """
+    try:
+        with open(local_path, "rb") as f:
+            files = {"file": (Path(local_path).name, f, content_type)}
+            response = requests.post(upload_url, headers={"X-Upload-Token": upload_token}, files=files, timeout=120)
+            handle_api_response(response, context="Upload file")
+    except FileNotFoundError:
+        raise FileNotFoundError(f"File not found: {local_path}")
+    except Exception as e:
+        raise Exception(f"Failed to upload file {local_path}: {str(e)}")
+
+
+def get_report_view(report_view_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
+    """Get a single report view by its ID."""
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+    
+    payload = {
+        "query": "get_report_view",
+        "params": {
+            "id": report_view_id
+        }
+    }
+    
+    response = requests.post(
+        f"{API_URL}/api",
+        headers=headers,
+        json=payload
+    )
+    
+    return handle_api_response(response, context="Get report view")
+
+
+def list_report_views(report_id: str, access_token: str, page: int = 1, size: int = 100, API_URL: str = DEFAULT_API_URL) -> dict:
+    """Get an array of report views created from a report by its ID."""
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+    
+    payload = {
+        "query": "list_report_views",
+        "params": {
+            "report_id": report_id,
+            "page": page,
+            "size": size
+        }
+    }
+    
+    response = requests.post(
+        f"{API_URL}/api",
+        headers=headers,
+        json=payload
+    )
+    
+    return handle_api_response(response, context="List report views")

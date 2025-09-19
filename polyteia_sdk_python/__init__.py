@@ -58,7 +58,14 @@ from .api_utils import (
     get_org_user_by_user_id,
     list_groups,
     delete_group,
-    get_report
+    get_report,
+    remove_insight_from_report,
+    update_report,
+    extract_insights_from_structure,
+    get_image_upload_token,
+    upload_local_file,
+    get_report_view,
+    list_report_views
 )
 
 from .insight_factory import (
@@ -126,7 +133,7 @@ __all__ = [
     "get_dataset_metadata_cols",
     "share_dataset_with_group",
     "generate_download_token",
-    "download_file",
+    "download_file_to_arrow",
     "list_workspaces",
     "list_solutions",
     "create_report",
@@ -143,6 +150,13 @@ __all__ = [
     "list_groups",
     "delete_group",
     "get_report",
+    "remove_insight_from_report",
+    "update_report",
+    "extract_insights_from_structure",
+    "get_image_upload_token",
+    "upload_local_file",
+    "get_report_view",
+    "list_report_views",
     # Insight Factory
     "InsightBuilder",
     "InsightBuilderV3",
