@@ -5,6 +5,7 @@ import time as timer
 import requests
 import pyarrow as pa
 import pyarrow.parquet as pq
+from typing import Union
 
 DEFAULT_API_URL = "https://app.polyteia.com"
 
@@ -1570,7 +1571,7 @@ def remove_insight_from_report(report_id: str, insight_id: str, access_token: st
     return handle_api_response(response, context="Remove insight from report")
 
 
-def extract_insights_from_structure(structure: dict | list) -> set:
+def extract_insights_from_structure(structure: Union[dict, list]) -> set:
     """
     Recursively extract all insight IDs from a report structure.
 
