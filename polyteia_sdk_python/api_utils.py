@@ -1765,3 +1765,31 @@ def list_report_views(report_id: str, access_token: str, page: int = 1, size: in
     )
     
     return handle_api_response(response, context="List report views")
+
+def create_report_view(report_id, name, config, access_token, API_URL = DEFAULT_API_URL):
+    
+    headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json"
+        }
+    
+    params = {
+        "command": "create_report_view",
+        "report_id": report_id,
+        "name": name,
+        "config": config
+    }
+
+    payload = {
+        "command": "create_report_view",
+        "params": params
+    }
+
+    response = requests.post(
+        f"{API_URL}/api",
+        headers=headers,
+        json=payload
+    )
+
+    json_response = handle_api_response(response, context="Create report view")
+    return json_response

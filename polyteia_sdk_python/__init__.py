@@ -65,7 +65,8 @@ from .api_utils import (
     get_image_upload_token,
     upload_local_file,
     get_report_view,
-    list_report_views
+    list_report_views,
+    create_report_view
 )
 
 from .insight_factory import (
@@ -157,6 +158,7 @@ __all__ = [
     "upload_local_file",
     "get_report_view",
     "list_report_views",
+    "create_report_view",
     # Insight Factory
     "InsightBuilder",
     "InsightBuilderV3",
