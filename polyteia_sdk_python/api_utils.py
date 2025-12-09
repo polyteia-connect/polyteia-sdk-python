@@ -1794,3 +1794,36 @@ def create_report_view(report_id, name, config, access_token, API_URL = DEFAULT_
 
     json_response = handle_api_response(response, context="Create report view")
     return json_response
+
+def update_dataset_source_timestamp(dataset_id: str, source_timestamp: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
+    """
+    Update the source timestamp of a dataset.
+
+    If source_timestamp looks like "YYYY-MM-DD", it is converted to "YYYY-MM-DDT00:00:00Z".
+    If it's already a full ISO timestamp (e.g. "2025-01-01T00:00:00Z"), it is passed through as-is.
+    """
+    parts = source_timestamp.split("-")
+    if len(parts) == 3 and all(part.isdigit() for part in parts):
+        formatted_timestamp = source_timestamp + "T00:00:00Z"
+    else:
+        formatted_timestamp = source_timestamp
+
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "command": "update_dataset_source_info",
+        "params": {
+            "id": dataset_id,
+            "source_info": {
+                "source_timestamp": formatted_timestamp
+            }
+        }
+    }
+    response = requests.post(
+        f"{API_URL}/api",
+        headers=headers,
+        json=payload
+    )
+    return handle_api_response(response, context="Update dataset source timestamp")
