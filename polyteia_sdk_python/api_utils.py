@@ -1795,7 +1795,7 @@ def create_report_view(report_id, name, config, access_token, API_URL = DEFAULT_
     json_response = handle_api_response(response, context="Create report view")
     return json_response
 
-def update_dataset_source_timestamp(dataset_id: str, source_timestamp: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
+def update_dataset_source_timestamp(dataset_id: str, source_timestamp: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
     """
     Update the source timestamp of a dataset.
 
@@ -1827,3 +1827,28 @@ def update_dataset_source_timestamp(dataset_id: str, source_timestamp: str, acce
         json=payload
     )
     return handle_api_response(response, context="Update dataset source timestamp")
+
+def execute_sql(sql: str, datasets: list, access_token: str, API_URL: str = DEFAULT_API_URL, args: Optional[list] = None, named_args: Optional[dict] = None, timeout: int = 60) -> dict:
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+    
+    payload = {
+        "command": "execute_sql",
+        "params": {
+            "sql": sql,
+            "datasets": datasets,
+            "args": args if args is not None else [],
+            "named_args": named_args if named_args is not None else {}
+        }
+    }
+    
+    response = requests.post(
+        f"{API_URL}/api/execute_sql",
+        headers=headers,
+        json=payload,
+        timeout=timeout
+    )
+    
+    return handle_api_response(response, context="Execute SQL")
