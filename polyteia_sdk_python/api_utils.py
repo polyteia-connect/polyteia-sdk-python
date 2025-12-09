@@ -1829,6 +1829,21 @@ def update_dataset_source_timestamp(dataset_id: str, source_timestamp: str, acce
     return handle_api_response(response, context="Update dataset source timestamp")
 
 def execute_sql(sql: str, datasets: list, access_token: str, API_URL: str = DEFAULT_API_URL, args: Optional[list] = None, named_args: Optional[dict] = None, timeout: int = 60) -> dict:
+    """
+    Execute a SQL query against specified datasets via the Polyteia API.
+
+    Parameters:
+        sql (str): The SQL query to execute.
+        datasets (list): List of dataset IDs to query.
+        access_token (str): Access token for authentication.
+        API_URL (str, optional): Base URL for the Polyteia API. Defaults to DEFAULT_API_URL.
+        args (list, optional): Positional arguments for the SQL query. Defaults to None.
+        named_args (dict, optional): Named arguments for the SQL query. Defaults to None.
+        timeout (int, optional): Timeout for the API request in seconds. Defaults to 60.
+
+    Returns:
+        dict: The API response as a dictionary.
+    """
     headers = {
         "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json"
