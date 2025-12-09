@@ -1828,7 +1828,7 @@ def update_dataset_source_timestamp(dataset_id: str, source_timestamp: str, acce
     )
     return handle_api_response(response, context="Update dataset source timestamp")
 
-def execute_sql(sql: str, datasets: list, access_token: str, API_URL: str = DEFAULT_API_URL, args: Optional[list] = None, named_args: Optional[dict] = None, timeout: int = 60) -> dict:
+def execute_sql(sql: str, datasets: List, access_token: str, API_URL: str = DEFAULT_API_URL, args: Optional[List] = None, named_args: Optional[dict] = None, timeout: int = 60) -> dict:
     headers = {
         "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json"
