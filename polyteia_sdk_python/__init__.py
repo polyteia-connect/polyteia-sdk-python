@@ -67,7 +67,8 @@ from .api_utils import (
     get_report_view,
     list_report_views,
     create_report_view,
-    update_dataset_source_timestamp
+    update_dataset_source_timestamp,
+    execute_sql
 )
 
 from .insight_factory import (
@@ -161,6 +162,7 @@ __all__ = [
     "list_report_views",
     "create_report_view",
     "update_dataset_source_timestamp",
+    "execute_sql",
     # Insight Factory
     "InsightBuilder",
     "InsightBuilderV3",
