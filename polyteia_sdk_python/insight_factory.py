@@ -20,6 +20,8 @@ VALID_FILTER_OPERATORS = {
     "less_or_equals",
     "is_null_or_empty",
     "is_not_null_or_empty",
+    "is_true",
+    "is_false"
 }
 
 VALID_MODES = {
