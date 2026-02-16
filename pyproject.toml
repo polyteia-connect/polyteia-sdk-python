@@ -1,5 +1,5 @@
 [tool.bumpversion]
-current_version = "0.1.26"
+current_version = "0.1.27"
 commit = true
 tag = true
 # Remove the old 'files = ...' line
