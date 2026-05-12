@@ -845,53 +845,153 @@ def create_solution(workspace_id: str, name: str, description: str, access_token
 
 
 def add_user_to_workspace(workspace_id: str, user_id: str, access_token: str, role: str = "admin", API_URL: str = DEFAULT_API_URL) -> None:
-    
+
     headers = {
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json"
         }
-    
+
     payload = {
-        "command": "add_workspace_member",
-            "params": {
-                "id": workspace_id,
-                "user_id": user_id,
-                "role": role
-            }
+        "command": "bulk_role_update",
+        "params": {
+            "resource_id": workspace_id,
+            "assignments": [{"id": user_id, "role": role}],
+            "unassignments": []
         }
-    
+    }
+
     response = requests.post(
             f"{API_URL}/api",
             headers=headers,
             json=payload
         )
-    
+
     handle_api_response(response, context="Add user to workspace")
-    
+
+
+def remove_user_from_workspace(workspace_id: str, user_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
+
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "command": "bulk_role_update",
+        "params": {
+            "resource_id": workspace_id,
+            "assignments": [],
+            "unassignments": [{"id": user_id}]
+        }
+    }
+
+    response = requests.post(
+        f"{API_URL}/api",
+        headers=headers,
+        json=payload
+    )
+
+    handle_api_response(response, context="Remove user from workspace")
+
+
+def update_workspace_member_role(workspace_id: str, user_id: str, role: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
+
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "command": "bulk_role_update",
+        "params": {
+            "resource_id": workspace_id,
+            "assignments": [{"id": user_id, "role": role}],
+            "unassignments": []
+        }
+    }
+
+    response = requests.post(
+        f"{API_URL}/api",
+        headers=headers,
+        json=payload
+    )
+
+    handle_api_response(response, context="Update workspace member role")
+
 
 def add_user_to_solution(solution_id: str, user_id: str, access_token: str, role: str = "admin", API_URL: str = DEFAULT_API_URL) -> None:
-    
+
     headers = {
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json"
         }
-    
+
     payload = {
-        "command": "add_solution_member",
-            "params": {
-                "id": solution_id,
-                "user_id": user_id,
-                "role": role
-            }
+        "command": "bulk_role_update",
+        "params": {
+            "resource_id": solution_id,
+            "assignments": [{"id": user_id, "role": role}],
+            "unassignments": []
         }
-    
+    }
+
     response = requests.post(
             f"{API_URL}/api",
             headers=headers,
             json=payload
         )
-    
+
     handle_api_response(response, context="Add user to solution")
+
+
+def remove_user_from_solution(solution_id: str, user_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
+
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "command": "bulk_role_update",
+        "params": {
+            "resource_id": solution_id,
+            "assignments": [],
+            "unassignments": [{"id": user_id}]
+        }
+    }
+
+    response = requests.post(
+        f"{API_URL}/api",
+        headers=headers,
+        json=payload
+    )
+
+    handle_api_response(response, context="Remove user from solution")
+
+
+def update_solution_member_role(solution_id: str, user_id: str, role: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
+
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "command": "bulk_role_update",
+        "params": {
+            "resource_id": solution_id,
+            "assignments": [{"id": user_id, "role": role}],
+            "unassignments": []
+        }
+    }
+
+    response = requests.post(
+        f"{API_URL}/api",
+        headers=headers,
+        json=payload
+    )
+
+    handle_api_response(response, context="Update solution member role")
 
 
 def delete_org(org_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
