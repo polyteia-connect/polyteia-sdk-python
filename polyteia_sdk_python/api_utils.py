@@ -730,13 +730,13 @@ def get_organisation(org_id: str, access_token: str, API_URL: str = DEFAULT_API_
     return json_response["data"]
 
 
-def create_org(name: str, description: str, slug: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> str:
-    
+def create_org(name: str, description: str, slug: str, access_token: str, no_seats: int = 10, enabled_dpa: bool = True, API_URL: str = DEFAULT_API_URL) -> str:
+
     headers = {
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json"
         }
-    
+
     payload = {
         "command": "create_organization",
             "params": {
@@ -744,20 +744,25 @@ def create_org(name: str, description: str, slug: str, access_token: str, API_UR
                 "description": description,
                 "slug": slug,
                 "settings": {
-                "seats": 10
+                "seats": no_seats,
+                "features": {
+                    "dpa": {
+                        "enabled": enabled_dpa
+                    }
+                }
             },
             "attributes": {
                 "key": "value"
             }
                 }
         }
-    
+
     response = requests.post(
             f"{API_URL}/api",
             headers=headers,
             json=payload
         )
-    
+
     json_response = handle_api_response(response, context="Create organization", required_keys=("data", "id"))
     return json_response["data"]["id"]
 
@@ -1927,6 +1932,198 @@ def update_dataset_source_timestamp(dataset_id: str, source_timestamp: str, acce
         json=payload
     )
     return handle_api_response(response, context="Update dataset source timestamp")
+
+def get_tag_by_id(tag_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "query": "get_tag",
+        "params": {"id": tag_id}
+    }
+    response = requests.post(f"{API_URL}/api", headers=headers, json=payload)
+    return handle_api_response(response, context="Get tag by id")
+
+
+def remove_tag_from_ressource(tag_id: str, ressource_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "command": "remove_tag_from_resource",
+        "params": {
+            "tag_id": tag_id,
+            "resource_id": ressource_id
+        }
+    }
+    response = requests.post(f"{API_URL}/api", headers=headers, json=payload)
+    handle_api_response(response, context="Remove tag from resource")
+
+
+def remove_from_org(org_id: str, user_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "command": "remove_from_organization",
+        "params": {
+            "id": org_id,
+            "user_id": user_id
+        }
+    }
+    response = requests.post(f"{API_URL}/api", headers=headers, json=payload)
+    return handle_api_response(response, context="Remove user from organization")
+
+
+def get_org_settings(org_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "query": "get_organization_settings",
+        "params": {"id": org_id}
+    }
+    response = requests.post(f"{API_URL}/api", headers=headers, json=payload)
+    json_response = handle_api_response(response, context="Get organization settings", required_keys=("data",))
+    return json_response["data"]
+
+
+def update_org_settings(org_id: str, settings: dict, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "command": "update_organization_settings",
+        "params": {
+            "id": org_id,
+            "settings": settings
+        }
+    }
+    response = requests.post(f"{API_URL}/api", headers=headers, json=payload)
+    return handle_api_response(response, context="Update organization settings")
+
+
+def list_solutions_recursive(org_id: str, access_token: str, search: str = "", page_size: int = 100, API_URL: str = DEFAULT_API_URL) -> List[str]:
+    page = 1
+    items = []
+    while True:
+        resp = list_solutions(org_id, access_token, page=page, size=page_size, search=search, API_URL=API_URL)
+        data = resp.get("data", {})
+        items.extend(data.get("items", []))
+        total = data.get("total", 0)
+        if (data.get("page", 1) * page_size) >= total:
+            break
+        page += 1
+        timer.sleep(0.2)
+    return items
+
+
+def create_solution_dpa_entry(
+    solution_id: str,
+    slug: str,
+    access_token: str,
+    data_processing_confirmed: bool,
+    has_personal_data: str,
+    data_category: str,
+    data_type: str,
+    person_group: str,
+    purpose: str,
+    safety_measures: str,
+    status: str = "inactive",
+    toggleable: bool = True,
+    API_URL: str = DEFAULT_API_URL
+) -> dict:
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "command": "create_solution_dpa_entry",
+        "params": {
+            "id": solution_id,
+            "slug": slug,
+            "status": status,
+            "toggleable": toggleable,
+            "attributes": {
+                "dataProcessingConfirmed": data_processing_confirmed,
+                "hasPersonalData": has_personal_data,
+                "dataCategory": data_category,
+                "activityAmendments": [{
+                    "dataType": data_type,
+                    "personGroup": person_group,
+                    "purpose": purpose,
+                    "safetyMeasures": safety_measures
+                }]
+            }
+        }
+    }
+    response = requests.post(f"{API_URL}/api", headers=headers, json=payload)
+    return handle_api_response(response, context="Create solution DPA entry")
+
+
+def delete_solution_dpa_entry(solution_id: str, slug: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "command": "delete_solution_dpa_entry",
+        "params": {
+            "id": solution_id,
+            "slug": slug
+        }
+    }
+    response = requests.post(f"{API_URL}/api", headers=headers, json=payload)
+    handle_api_response(response, context="Delete solution DPA entry")
+
+
+def update_solution_dpa_entry(
+    solution_id: str,
+    slug: str,
+    access_token: str,
+    data_processing_confirmed: bool,
+    has_personal_data: str,
+    data_category: str,
+    data_type: str,
+    person_group: str,
+    purpose: str,
+    safety_measures: str,
+    status: str = "inactive",
+    toggleable: bool = True,
+    API_URL: str = DEFAULT_API_URL
+) -> dict:
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "command": "update_solution_dpa_entry",
+        "params": {
+            "id": solution_id,
+            "slug": slug,
+            "status": status,
+            "toggleable": toggleable,
+            "attributes": {
+                "dataProcessingConfirmed": data_processing_confirmed,
+                "hasPersonalData": has_personal_data,
+                "dataCategory": data_category,
+                "activityAmendments": [{
+                    "dataType": data_type,
+                    "personGroup": person_group,
+                    "purpose": purpose,
+                    "safetyMeasures": safety_measures
+                }]
+            }
+        }
+    }
+    response = requests.post(f"{API_URL}/api", headers=headers, json=payload)
+    return handle_api_response(response, context="Update solution DPA entry")
+
 
 def execute_sql(sql: str, datasets: List, access_token: str, API_URL: str = DEFAULT_API_URL, args: Optional[List] = None, named_args: Optional[dict] = None, timeout: int = 60) -> dict:
     """

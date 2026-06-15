@@ -68,7 +68,16 @@ from .api_utils import (
     list_report_views,
     create_report_view,
     update_dataset_source_timestamp,
-    execute_sql
+    execute_sql,
+    get_tag_by_id,
+    remove_tag_from_ressource,
+    remove_from_org,
+    get_org_settings,
+    update_org_settings,
+    list_solutions_recursive,
+    create_solution_dpa_entry,
+    delete_solution_dpa_entry,
+    update_solution_dpa_entry,
 )
 
 from .insight_factory import (
@@ -163,6 +172,15 @@ __all__ = [
     "create_report_view",
     "update_dataset_source_timestamp",
     "execute_sql",
+    "get_tag_by_id",
+    "remove_tag_from_ressource",
+    "remove_from_org",
+    "get_org_settings",
+    "update_org_settings",
+    "list_solutions_recursive",
+    "create_solution_dpa_entry",
+    "delete_solution_dpa_entry",
+    "update_solution_dpa_entry",
     # Insight Factory
     "InsightBuilder",
     "InsightBuilderV3",
