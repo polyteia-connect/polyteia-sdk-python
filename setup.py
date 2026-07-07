@@ -6,9 +6,9 @@ def load_requirements(filename):
         return f.read().splitlines()
 
 setup(
-    name="polyteia-sdk-python",
-    version="0.1.29",
-    packages=find_packages(),
+    name="polyteia-sdk-python-v2",
+    version="0.2.0",
+    packages=find_packages(include=["polyteia_sdk_python_v2", "polyteia_sdk_python_v2.*"]),
     install_requires=load_requirements("requirements.txt"),
     extras_require={
         "spark": ["pyspark>=3.4.0"]  # Optional
