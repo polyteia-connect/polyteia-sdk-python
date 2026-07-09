@@ -2164,3 +2164,124 @@ def execute_sql(sql: str, datasets: List, access_token: str, API_URL: str = DEFA
     )
     
     return handle_api_response(response, context="Execute SQL")
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Forms
+#
+# Forms have no slug — identify them by name + id. A form references its
+# backing dataset via a single top-level `dataset_id`. A freshly created form
+# is DRAFT; `submitters`, `status` and timestamps are backend-managed and must
+# not be sent in payloads.
+# ─────────────────────────────────────────────────────────────────────────────
+
+def get_form(form_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
+    """Fetch a form by id."""
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "query": "get_resource",
+        "params": {
+            "id": form_id
+        }
+    }
+
+    response = requests.post(
+        f"{API_URL}/api",
+        headers=headers,
+        json=payload
+    )
+
+    return handle_api_response(response, context="Get form")
+
+
+def list_forms(container_id: str, access_token: str, page_nr: int = 1,
+               page_size: int = 100, API_URL: str = DEFAULT_API_URL) -> dict:
+    """List the forms in a solution (convenience wrapper over list_resources)."""
+    return list_resources(
+        container_id,
+        access_token,
+        ressource_type="form",
+        page_nr=page_nr,
+        page_size=page_size,
+        API_URL=API_URL,
+    )
+
+
+def create_form(solution_id: str, organization_id: str, name: str, schema: dict,
+                access_token: str, description: str = "",
+                metadata: Optional[dict] = None, dataset_id: Optional[str] = None,
+                API_URL: str = DEFAULT_API_URL) -> dict:
+    """Create a form (created as DRAFT).
+
+    Pass ``dataset_id`` to bind the form to an **existing** dataset — the
+    dataset is neither renamed nor auto-created. Without ``dataset_id`` the
+    backend auto-creates a new dataset for the form (form id and dataset id
+    share a base). For migrations/rollouts always pass ``dataset_id``.
+    """
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+
+    params = {
+        "solution_id": solution_id,
+        "organization_id": organization_id,
+        "name": name,
+        "description": description,
+        "schema": schema,
+    }
+    if metadata is not None:
+        params["metadata"] = metadata
+    if dataset_id is not None:
+        params["dataset_id"] = dataset_id
+
+    payload = {
+        "command": "create_form",
+        "params": params
+    }
+
+    response = requests.post(
+        f"{API_URL}/api",
+        headers=headers,
+        json=payload
+    )
+
+    return handle_api_response(response, context="Create form")
+
+
+def update_form(form_id: str, access_token: str, API_URL: str = DEFAULT_API_URL,
+                ignore_dataset_update: bool = True, **kwargs) -> dict:
+    """Flexibly update a form via the provided kwargs (name, description,
+    schema, metadata, ...).
+
+    By default the platform renames the linked dataset's name/description to
+    match the form. ``ignore_dataset_update=True`` (the default here) prevents
+    that — only set it to False when the dataset is form-managed and should
+    follow the form's name.
+    """
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+
+    params = {
+        "id": form_id,
+        **kwargs,
+        "options": {"ignore_dataset_update": ignore_dataset_update},
+    }
+
+    payload = {
+        "command": "update_form",
+        "params": params
+    }
+
+    response = requests.post(
+        f"{API_URL}/api",
+        headers=headers,
+        json=payload
+    )
+
+    return handle_api_response(response, context="Update form")
