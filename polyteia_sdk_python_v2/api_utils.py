@@ -629,6 +629,38 @@ def get_my_member_id(org_id: str, access_token: str, API_URL: str = DEFAULT_API_
     return None
 
 
+def list_org_members(org_id: str, access_token: str, include_deactivated: bool = False, API_URL: str = DEFAULT_API_URL) -> list:
+    """List an organization's members. Requires an organization-admin session.
+
+    Each row is ``{id, role, createdAt, deactivatedAt, licensedAt, user}`` where
+    ``user`` carries ``{id, name, email, ...}`` and ``id`` is the member id that
+    membership calls take.
+
+    NOTE: only rows whose role is ``member`` or ``guest`` are returned —
+    organization ADMINS are excluded. A user who holds only an admin row does not
+    appear here, and has no member id to grant workspace or solution access with.
+    """
+    return rpc_call(
+        "auth", "organizationAdmin/listMembers",
+        {"organizationId": org_id, "includeDeactivated": include_deactivated},
+        access_token=access_token, API_URL=API_URL, context="List organization members",
+    )
+
+
+def find_member_id_by_email(org_id: str, email: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> Optional[str]:
+    """The organization member id whose user has ``email``, or ``None``.
+
+    Compared case-insensitively. Searches only members and guests, so see the
+    caveat on ``list_org_members`` about organization admins.
+    """
+    wanted = (email or "").strip().lower()
+    for member in list_org_members(org_id, access_token, API_URL=API_URL) or []:
+        user = member.get("user") or {}
+        if (user.get("email") or "").strip().lower() == wanted:
+            return member.get("id")
+    return None
+
+
 def create_workspace(org_id: str, name: str, description: str, access_token: str, add_self_as_admin: bool = True, API_URL: str = DEFAULT_API_URL) -> str:
     """Create a workspace and return its id.
 
@@ -709,6 +741,80 @@ def delete_solution(solution_id: str, access_token: str, API_URL: str = DEFAULT_
     rpc_call(
         "solution", "deleteSolution", {"id": solution_id},
         access_token=access_token, API_URL=API_URL, context="Delete solution",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Public properties
+#
+# Workspaces, solutions and groups each carry a ``publicProperties`` bag: an
+# arbitrary key-value mapping (values may be nested JSON) exposed to the
+# platform's expression-evaluation context.
+#
+# All three setters REPLACE the bag wholesale rather than merging into it, so a
+# caller that wants to change one key must send every key it wishes to keep. To
+# amend rather than define, read the current bag first: it is returned on the
+# resource itself by ``get_solution``, ``list_workspaces`` and ``list_groups``.
+#
+# Permission: the same "edit details" right as the resource's other edits (for
+# a workspace or solution, workspace-admin).
+# ---------------------------------------------------------------------------
+
+
+def set_workspace_public_properties(
+    workspace_id: str,
+    public_properties: dict,
+    access_token: str,
+    API_URL: str = DEFAULT_API_URL,
+) -> dict:
+    """Replace a workspace's public properties. Returns the updated workspace.
+
+    ``public_properties`` replaces the stored bag in full; keys absent from it
+    are removed.
+    """
+    return rpc_call(
+        "workspace", "setWorkspacePublicProperties",
+        {"id": workspace_id, "publicProperties": public_properties},
+        access_token=access_token, API_URL=API_URL,
+        context="Set workspace public properties",
+    )
+
+
+def set_solution_public_properties(
+    solution_id: str,
+    public_properties: dict,
+    access_token: str,
+    API_URL: str = DEFAULT_API_URL,
+) -> dict:
+    """Replace a solution's public properties. Returns the updated solution.
+
+    ``public_properties`` replaces the stored bag in full; keys absent from it
+    are removed.
+    """
+    return rpc_call(
+        "solution", "setSolutionPublicProperties",
+        {"id": solution_id, "publicProperties": public_properties},
+        access_token=access_token, API_URL=API_URL,
+        context="Set solution public properties",
+    )
+
+
+def set_group_public_properties(
+    group_id: str,
+    public_properties: dict,
+    access_token: str,
+    API_URL: str = DEFAULT_API_URL,
+) -> dict:
+    """Replace a group's public properties. Returns the updated group.
+
+    ``public_properties`` replaces the stored bag in full; keys absent from it
+    are removed.
+    """
+    return rpc_call(
+        "group", "setGroupPublicProperties",
+        {"id": group_id, "publicProperties": public_properties},
+        access_token=access_token, API_URL=API_URL,
+        context="Set group public properties",
     )
 
 
