@@ -1607,6 +1607,55 @@ def list_groups(org_id: str, access_token: str, page: int = 1, size: int = 100, 
 
     return handle_api_response(response, context="List groups")["data"]["items"]
 
+def get_group(group_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
+    """Return a group's full config, including its ``public_properties``."""
+    headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json"
+        }
+
+    payload = {
+        "query": "get_group",
+            "params": {
+                "id": group_id
+            }
+        }
+
+    response = requests.post(
+            f"{API_URL}/api",
+            headers=headers,
+            json=payload
+        )
+
+    return handle_api_response(response, context="Get group", required_keys=("data",))["data"]
+
+def set_group_public_properties(group_id: str, public_properties: dict, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
+    """Set a group's ``public_properties`` (the values report CELs read for row-level filtering).
+
+    Uses the ``set_group_public_properties`` command. Note that ``update_group``
+    silently ignores ``public_properties``, so it cannot be used for this.
+    """
+    headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json"
+        }
+
+    payload = {
+        "command": "set_group_public_properties",
+            "params": {
+                "id": group_id,
+                "public_properties": public_properties
+            }
+        }
+
+    response = requests.post(
+            f"{API_URL}/api",
+            headers=headers,
+            json=payload
+        )
+
+    return handle_api_response(response, context="Set group public properties")
+
 def delete_group(org_id: str, group_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
     
     headers = {
