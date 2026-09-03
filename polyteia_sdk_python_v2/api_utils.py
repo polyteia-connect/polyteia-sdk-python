@@ -850,18 +850,23 @@ def add_user_to_group(group_id: str, member_id: str, access_token: str, API_URL:
 
 
 def execute_sql(
-    sql: str, datasets: List, access_token: str, API_URL: str = DEFAULT_API_URL,
-    args: Optional[List] = None, named_args: Optional[dict] = None, timeout: int = DEFAULT_TIMEOUT,
+    sql: str, datasets: Optional[List] = None, access_token: str = "",
+    API_URL: str = DEFAULT_API_URL, args: Optional[List] = None,
+    named_args: Optional[dict] = None, timeout: int = DEFAULT_TIMEOUT,
+    solution_id: Optional[str] = None,
 ) -> pa.Table:
     """Run an ad-hoc SQL query and return the result as an Arrow table.
 
-    The referenced datasets must be accessible to the session. The response is
-    an Apache Arrow IPC stream.
+    Reference datasets by bare id (``FROM 'ds_abc'``), not with the ``{{...}}``
+    braces used in insight SQL. ``datasets`` is ignored, kept for compatibility.
     """
     import requests
     from ._transport import _normalize_base_url
 
-    body = {"query": sql}
+    if not solution_id:
+        raise PolyteiaAPIError("execute_sql requires solution_id")
+
+    body = {"query": sql, "solution_id": solution_id}
     if args is not None:
         body["args"] = args
     if named_args is not None:
@@ -1500,4 +1505,95 @@ def get_submission_asset_url(submission_id: str, path: str, access_token: str, d
     return rpc_call(
         "form", "getSubmissionAssetUrl", {"submissionId": submission_id, "path": path, "download": download},
         access_token=access_token, API_URL=API_URL, context="Get submission asset URL",
+    )
+
+
+# ---------------------------------------------------------------------------
+# DPA (Verzeichnis von Verarbeitungstätigkeiten)
+# ---------------------------------------------------------------------------
+
+
+def list_dpa_activities(solution_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> list:
+    """List the processing activities recorded for a solution."""
+    return rpc_call(
+        "dpa", "listActivities", {"solutionId": solution_id},
+        access_token=access_token, API_URL=API_URL, context="List DPA activities",
+    )
+
+
+def create_dpa_activity(
+    solution_id: str, data_type: str, person_group: str, purpose: str,
+    access_token: str, safety_measures: Optional[str] = None,
+    data_category: str = "none", API_URL: str = DEFAULT_API_URL,
+) -> dict:
+    """``data_category``: "none" | "art9" | "art10" | "both"."""
+    return rpc_call(
+        "dpa", "createActivity",
+        {"solutionId": solution_id, "dataType": data_type,
+         "personGroup": person_group, "purpose": purpose,
+         "safetyMeasures": safety_measures, "dataCategory": data_category},
+        access_token=access_token, API_URL=API_URL, context="Create DPA activity",
+    )
+
+
+def update_dpa_activity(
+    solution_id: str, activity_id: str, data_type: str, person_group: str,
+    purpose: str, access_token: str, safety_measures: Optional[str] = None,
+    data_category: str = "none", API_URL: str = DEFAULT_API_URL,
+) -> dict:
+    return rpc_call(
+        "dpa", "updateActivity",
+        {"solutionId": solution_id, "id": activity_id, "dataType": data_type,
+         "personGroup": person_group, "purpose": purpose,
+         "safetyMeasures": safety_measures, "dataCategory": data_category},
+        access_token=access_token, API_URL=API_URL, context="Update DPA activity",
+    )
+
+
+def delete_dpa_activity(solution_id: str, activity_id: str, access_token: str,
+                        API_URL: str = DEFAULT_API_URL) -> dict:
+    return rpc_call(
+        "dpa", "deleteActivity", {"solutionId": solution_id, "id": activity_id},
+        access_token=access_token, API_URL=API_URL, context="Delete DPA activity",
+    )
+
+
+def toggle_dpa_activity(solution_id: str, activity_id: str, access_token: str,
+                        API_URL: str = DEFAULT_API_URL) -> dict:
+    """Flip an activity between active and inactive."""
+    return rpc_call(
+        "dpa", "toggleActivity", {"solutionId": solution_id, "id": activity_id},
+        access_token=access_token, API_URL=API_URL, context="Toggle DPA activity",
+    )
+
+
+def set_dpa_activity_lock(solution_id: str, activity_id: str, locked: bool,
+                          access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
+    """Locked entries cannot be edited, deleted or toggled until unlocked."""
+    return rpc_call(
+        "dpa", "setActivityLock",
+        {"solutionId": solution_id, "id": activity_id, "locked": locked},
+        access_token=access_token, API_URL=API_URL, context="Set DPA activity lock",
+    )
+
+
+def record_dpa_acceptance(solution_id: str, access_token: str,
+                          context: Optional[str] = None,
+                          API_URL: str = DEFAULT_API_URL) -> dict:
+    """Record that the current user accepted the DPA terms for a solution."""
+    params = {"solutionId": solution_id}
+    if context is not None:
+        params["context"] = context
+    return rpc_call(
+        "dpa", "recordAcceptance", params,
+        access_token=access_token, API_URL=API_URL, context="Record DPA acceptance",
+    )
+
+
+def get_my_dpa_acceptance_status(solution_id: str, access_token: str,
+                                 API_URL: str = DEFAULT_API_URL) -> dict:
+    """Has the current user acknowledged the DPA terms for this solution?"""
+    return rpc_call(
+        "dpa", "getMyAcceptanceStatus", {"solutionId": solution_id},
+        access_token=access_token, API_URL=API_URL, context="Get DPA acceptance status",
     )

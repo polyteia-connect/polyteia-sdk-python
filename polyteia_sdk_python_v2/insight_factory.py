@@ -119,6 +119,13 @@ def _col(select: "SelectDef", type_hint: str) -> Dict[str, Any]:
     }
 
 
+def _y_axis(columns):
+    """One SelectDef or a list -> the array the API expects."""
+    if not isinstance(columns, (list, tuple)):
+        columns = [columns]
+    return [{"id": str(uuid.uuid4()), "column": _col(c, "number")} for c in columns]
+
+
 class InsightBuilder:
     """Fluent builder for an insight definition (query + chart config)."""
 
@@ -257,15 +264,16 @@ class InsightBuilder:
         self._insight.config = cfg
         return self
 
-    def set_bar_chart(self, x_axis_column: SelectDef, y_axis_column: SelectDef,
+    def set_bar_chart(self, x_axis_column: SelectDef, y_axis_column,
                      metric_column: Optional[SelectDef] = None, bar_group_type: str = "group",
                      bar_layout: str = "vertical", show_label: bool = True, title: str = "",
                      subtitle: str = "", ticks_layout: str = "normal"):
+        """``y_axis_column`` takes one SelectDef or a list for multiple series."""
         cfg = self._common(title, subtitle)
         cfg.update({
             "type": "bar-chart",
             "xAxis": {"column": _col(x_axis_column, "text"), "ticksLayout": ticks_layout, "formatting": None},
-            "yAxis": [{"id": str(uuid.uuid4()), "column": _col(y_axis_column, "number")}],
+            "yAxis": _y_axis(y_axis_column),
             "metric": {"column": None if metric_column is None else _col(metric_column, "text")},
             "tooltip": {"fields": []},
             "barGroupType": bar_group_type,
@@ -275,7 +283,7 @@ class InsightBuilder:
         self._insight.config = cfg
         return self
 
-    def set_line_chart(self, x_axis_column: SelectDef, y_axis_column: SelectDef,
+    def set_line_chart(self, x_axis_column: SelectDef, y_axis_column,
                       metric_column: Optional[SelectDef] = None, interpolation: str = "linear",
                       show_label: bool = True, stack: str = "none", title: str = "",
                       subtitle: str = "", ticks_layout: str = "normal", fallback_value: str = "empty"):
@@ -283,7 +291,7 @@ class InsightBuilder:
         cfg.update({
             "type": "line-chart",
             "xAxis": {"column": _col(x_axis_column, "text"), "ticksLayout": ticks_layout, "formatting": None},
-            "yAxis": [{"id": str(uuid.uuid4()), "column": _col(y_axis_column, "number")}],
+            "yAxis": _y_axis(y_axis_column),
             "metric": {"column": None if metric_column is None else _col(metric_column, "text")},
             "tooltip": {"fields": []},
             "stack": stack,
@@ -307,6 +315,54 @@ class InsightBuilder:
         self._insight.config = cfg
         return self
 
+    def set_scatter_chart(self, x_axis_column: SelectDef, y_axis_column: SelectDef,
+                     size_column: Optional[SelectDef] = None,
+                     group_column: Optional[SelectDef] = None, show_label: bool = True,
+                     title: str = "", subtitle: str = "", ticks_layout: str = "normal"):
+        """yAxis is a single object here, unlike bar/line which take an array."""
+        cfg = self._common(title, subtitle)
+        cfg.update({
+            "type": "scatter-chart",
+            "xAxis": {"column": _col(x_axis_column, "number"), "ticksLayout": ticks_layout, "formatting": None},
+            "yAxis": {"id": str(uuid.uuid4()), "column": _col(y_axis_column, "number")},
+            "sizeColumn": _col(size_column, "number") if size_column else None,
+            "groupColumn": _col(group_column, "text") if group_column else None,
+            "xAxisDataRange": {"min": None, "max": None},
+            "yAxisDataRange": {"min": None, "max": None},
+            "showLabel": show_label,
+        })
+        self._insight.config = cfg
+        return self
+
+    def set_box_plot(self, category_column: SelectDef, value_column: Optional[SelectDef] = None,
+                     mode: str = "raw", min_column: Optional[SelectDef] = None,
+                     q1_column: Optional[SelectDef] = None, median_column: Optional[SelectDef] = None,
+                     q3_column: Optional[SelectDef] = None, max_column: Optional[SelectDef] = None,
+                     layout: str = "vertical", outliers_mode: str = "plot",
+                     category_ticks_layout: str = "normal", category_ticks_interval: str = "auto",
+                     title: str = "", subtitle: str = ""):
+        """mode 'raw' uses value_column; 'pre-computed' uses min/q1/median/q3/max."""
+        cfg = self._common(title, subtitle)
+        cfg.update({
+            "type": "box-plot",
+            "mode": mode,
+            "categoryColumn": _col(category_column, "text"),
+            "categoryTicksLayout": category_ticks_layout,
+            "categoryTicksInterval": category_ticks_interval,
+            "valueColumn": _col(value_column, "number") if value_column else None,
+            "outliersMode": outliers_mode,
+            "minColumn": _col(min_column, "number") if min_column else None,
+            "q1Column": _col(q1_column, "number") if q1_column else None,
+            "medianColumn": _col(median_column, "number") if median_column else None,
+            "q3Column": _col(q3_column, "number") if q3_column else None,
+            "maxColumn": _col(max_column, "number") if max_column else None,
+            "layout": layout,
+            "valueAxisDataRange": {"min": None, "max": None},
+            "valueAxisFormatting": None,
+        })
+        self._insight.config = cfg
+        return self
+
     def set_map_chart(self, geometry_column: SelectDef, label_column: Optional[SelectDef] = None,
                      value_column: Optional[SelectDef] = None, show_label: bool = True, title: str = "",
                      subtitle: str = "", layer_type: str = "choropleth", layer_title: str = "",
@@ -316,6 +372,7 @@ class InsightBuilder:
             "type": layer_type, "fillStyle": fill_style,
             "id": str(uuid.uuid4()).replace("-", ""), "showLabel": show_label,
             "title": layer_title, "tooltip": {"fields": None},
+            "colorize": None,   # required key; null is fine
             "geometryColumn": _col(geometry_column, "geometry"),
         }
         if label_column:
