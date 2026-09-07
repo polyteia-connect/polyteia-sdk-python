@@ -123,6 +123,78 @@ def get_org_access_token(org_slug: Optional[str] = None, PAK: str = "", API_URL:
     return result["token"]
 
 
+def get_user_access_token(PAK: str, API_URL: str = DEFAULT_API_URL) -> str:
+    """Exchange a PAK for an UNSCOPED (user-level) session token.
+
+    Needed for accepting organization invitations: a token scoped to some other
+    org is refused with "Sign out of the current organization before accepting".
+    """
+    result = rpc_call(
+        "auth", "personalAccessKey/exchange", {"key": PAK},
+        access_token=None, API_URL=API_URL, context="Exchange personal access key",
+    )
+    if not isinstance(result, dict) or "token" not in result:
+        raise PolyteiaAPIError("Token exchange returned no token")
+    return result["token"]
+
+
+def accept_org_invitation(invitation_id: str, access_token: str,
+                          API_URL: str = DEFAULT_API_URL) -> dict:
+    """Accept an organization or workspace invitation.
+
+    ``access_token`` must be an unscoped session (see get_user_access_token).
+    This is a REST route, not RPC.
+    """
+    import requests
+    from ._transport import _normalize_base_url
+
+    url = f"{_normalize_base_url(API_URL)}/api/auth/organization/invitation/accept"
+    try:
+        resp = requests.post(
+            url, headers={"Authorization": f"Bearer {access_token}",
+                          "Content-Type": "application/json"},
+            json={"invitationId": invitation_id}, timeout=DEFAULT_TIMEOUT)
+    except requests.RequestException as exc:
+        raise PolyteiaAPIError(f"Accept invitation failed: {exc}") from exc
+    if resp.status_code != 200:
+        raise PolyteiaAPIError(
+            f"Accept invitation failed (HTTP {resp.status_code}):\n{resp.text}",
+            status_code=resp.status_code)
+    return resp.json()
+
+
+def invite_to_organization(org_id: str, email: str, access_token: str,
+                           API_URL: str = DEFAULT_API_URL) -> dict:
+    """Invite someone to an organization as org-admin (cockpit, system-admin).
+
+    Grants admin only, not membership — membership comes from a workspace
+    invitation (see invite_to_workspace).
+    """
+    return rpc_call(
+        "cockpit", "admin/invite", {"organizationId": org_id, "email": email},
+        access_token=access_token, API_URL=API_URL, context="Invite to organization",
+    )
+
+
+def invite_to_workspace(workspace_id: str, email: str, access_token: str,
+                        kind: str = "workspaceAdmin",
+                        API_URL: str = DEFAULT_API_URL) -> dict:
+    """Invite someone to a workspace. Accepting this grants org membership."""
+    return rpc_call(
+        "enterprise", "workspace/inviteToWorkspace",
+        {"workspaceId": workspace_id, "email": email, "kind": kind},
+        access_token=access_token, API_URL=API_URL, context="Invite to workspace",
+    )
+
+
+def delete_org(org_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
+    """Delete an organization (cockpit, system-admin)."""
+    return rpc_call(
+        "cockpit", "organization/delete", {"organizationId": org_id},
+        access_token=access_token, API_URL=API_URL, context="Delete organization",
+    )
+
+
 # ---------------------------------------------------------------------------
 # Datasets
 # ---------------------------------------------------------------------------
