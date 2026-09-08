@@ -1581,6 +1581,74 @@ def get_submission_asset_url(submission_id: str, path: str, access_token: str, d
 
 
 # ---------------------------------------------------------------------------
+# Dataviews
+# ---------------------------------------------------------------------------
+
+
+def create_dataview(solution_id: str, name: str, query: dict, access_token: str,
+                    slug: Optional[str] = None, description: Optional[str] = None,
+                    API_URL: str = DEFAULT_API_URL) -> dict:
+    """Create a dataview. `query` is the same shape as an insight query
+    (version/mode/sqlEditor/queryBuilder); in SQL, reference datasets by bare
+    id in double quotes: SELECT * FROM "ds_abc"."""
+    params = {"solutionId": solution_id, "name": name, "query": query,
+              "description": description}
+    if slug is not None:
+        params["slug"] = slug
+    return rpc_call("dataview", "createDataview", params,
+                    access_token=access_token, API_URL=API_URL,
+                    context="Create dataview")
+
+
+def update_dataview(dataview_id: str, access_token: str,
+                    API_URL: str = DEFAULT_API_URL, **kwargs) -> dict:
+    """Update name/slug/description. The definition changes via redefine_dataview."""
+    return rpc_call("dataview", "updateDataview", {"id": dataview_id, **kwargs},
+                    access_token=access_token, API_URL=API_URL,
+                    context="Update dataview")
+
+
+def redefine_dataview(dataview_id: str, query: dict, access_token: str,
+                      API_URL: str = DEFAULT_API_URL) -> dict:
+    return rpc_call("dataview", "redefineDataview",
+                    {"id": dataview_id, "query": query},
+                    access_token=access_token, API_URL=API_URL,
+                    context="Redefine dataview")
+
+
+def get_dataview(access_token: str, dataview_id: Optional[str] = None,
+                 solution_id: Optional[str] = None, slug: Optional[str] = None,
+                 API_URL: str = DEFAULT_API_URL) -> dict:
+    """Fetch by id, or by (solution_id, slug)."""
+    params = {"id": dataview_id} if dataview_id else              {"solutionId": solution_id, "slug": slug}
+    return rpc_call("dataview", "getDataview", params,
+                    access_token=access_token, API_URL=API_URL,
+                    context="Get dataview")
+
+
+def list_dataviews(solution_id: str, access_token: str,
+                   API_URL: str = DEFAULT_API_URL) -> list:
+    return rpc_call("dataview", "listDataviews", {"solutionId": solution_id},
+                    access_token=access_token, API_URL=API_URL,
+                    context="List dataviews")
+
+
+def delete_dataview(dataview_id: str, access_token: str,
+                    API_URL: str = DEFAULT_API_URL) -> dict:
+    return rpc_call("dataview", "deleteDataview", {"id": dataview_id},
+                    access_token=access_token, API_URL=API_URL,
+                    context="Delete dataview")
+
+
+def set_dataview_lock(dataview_id: str, locked: bool, access_token: str,
+                      API_URL: str = DEFAULT_API_URL) -> dict:
+    return rpc_call("dataview", "setDataviewLock",
+                    {"id": dataview_id, "locked": locked},
+                    access_token=access_token, API_URL=API_URL,
+                    context="Set dataview lock")
+
+
+# ---------------------------------------------------------------------------
 # DPA (Verzeichnis von Verarbeitungstätigkeiten)
 # ---------------------------------------------------------------------------
 
