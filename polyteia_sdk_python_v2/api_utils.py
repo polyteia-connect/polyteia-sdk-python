@@ -123,6 +123,78 @@ def get_org_access_token(org_slug: Optional[str] = None, PAK: str = "", API_URL:
     return result["token"]
 
 
+def get_user_access_token(PAK: str, API_URL: str = DEFAULT_API_URL) -> str:
+    """Exchange a PAK for an UNSCOPED (user-level) session token.
+
+    Needed for accepting organization invitations: a token scoped to some other
+    org is refused with "Sign out of the current organization before accepting".
+    """
+    result = rpc_call(
+        "auth", "personalAccessKey/exchange", {"key": PAK},
+        access_token=None, API_URL=API_URL, context="Exchange personal access key",
+    )
+    if not isinstance(result, dict) or "token" not in result:
+        raise PolyteiaAPIError("Token exchange returned no token")
+    return result["token"]
+
+
+def accept_org_invitation(invitation_id: str, access_token: str,
+                          API_URL: str = DEFAULT_API_URL) -> dict:
+    """Accept an organization or workspace invitation.
+
+    ``access_token`` must be an unscoped session (see get_user_access_token).
+    This is a REST route, not RPC.
+    """
+    import requests
+    from ._transport import _normalize_base_url
+
+    url = f"{_normalize_base_url(API_URL)}/api/auth/organization/invitation/accept"
+    try:
+        resp = requests.post(
+            url, headers={"Authorization": f"Bearer {access_token}",
+                          "Content-Type": "application/json"},
+            json={"invitationId": invitation_id}, timeout=DEFAULT_TIMEOUT)
+    except requests.RequestException as exc:
+        raise PolyteiaAPIError(f"Accept invitation failed: {exc}") from exc
+    if resp.status_code != 200:
+        raise PolyteiaAPIError(
+            f"Accept invitation failed (HTTP {resp.status_code}):\n{resp.text}",
+            status_code=resp.status_code)
+    return resp.json()
+
+
+def invite_to_organization(org_id: str, email: str, access_token: str,
+                           API_URL: str = DEFAULT_API_URL) -> dict:
+    """Invite someone to an organization as org-admin (cockpit, system-admin).
+
+    Grants admin only, not membership — membership comes from a workspace
+    invitation (see invite_to_workspace).
+    """
+    return rpc_call(
+        "cockpit", "admin/invite", {"organizationId": org_id, "email": email},
+        access_token=access_token, API_URL=API_URL, context="Invite to organization",
+    )
+
+
+def invite_to_workspace(workspace_id: str, email: str, access_token: str,
+                        kind: str = "workspaceAdmin",
+                        API_URL: str = DEFAULT_API_URL) -> dict:
+    """Invite someone to a workspace. Accepting this grants org membership."""
+    return rpc_call(
+        "enterprise", "workspace/inviteToWorkspace",
+        {"workspaceId": workspace_id, "email": email, "kind": kind},
+        access_token=access_token, API_URL=API_URL, context="Invite to workspace",
+    )
+
+
+def delete_org(org_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
+    """Delete an organization (cockpit, system-admin)."""
+    return rpc_call(
+        "cockpit", "organization/delete", {"organizationId": org_id},
+        access_token=access_token, API_URL=API_URL, context="Delete organization",
+    )
+
+
 # ---------------------------------------------------------------------------
 # Datasets
 # ---------------------------------------------------------------------------
@@ -850,18 +922,23 @@ def add_user_to_group(group_id: str, member_id: str, access_token: str, API_URL:
 
 
 def execute_sql(
-    sql: str, datasets: List, access_token: str, API_URL: str = DEFAULT_API_URL,
-    args: Optional[List] = None, named_args: Optional[dict] = None, timeout: int = DEFAULT_TIMEOUT,
+    sql: str, datasets: Optional[List] = None, access_token: str = "",
+    API_URL: str = DEFAULT_API_URL, args: Optional[List] = None,
+    named_args: Optional[dict] = None, timeout: int = DEFAULT_TIMEOUT,
+    solution_id: Optional[str] = None,
 ) -> pa.Table:
     """Run an ad-hoc SQL query and return the result as an Arrow table.
 
-    The referenced datasets must be accessible to the session. The response is
-    an Apache Arrow IPC stream.
+    Reference datasets by bare id (``FROM 'ds_abc'``), not with the ``{{...}}``
+    braces used in insight SQL. ``datasets`` is ignored, kept for compatibility.
     """
     import requests
     from ._transport import _normalize_base_url
 
-    body = {"query": sql}
+    if not solution_id:
+        raise PolyteiaAPIError("execute_sql requires solution_id")
+
+    body = {"query": sql, "solution_id": solution_id}
     if args is not None:
         body["args"] = args
     if named_args is not None:
@@ -1500,4 +1577,163 @@ def get_submission_asset_url(submission_id: str, path: str, access_token: str, d
     return rpc_call(
         "form", "getSubmissionAssetUrl", {"submissionId": submission_id, "path": path, "download": download},
         access_token=access_token, API_URL=API_URL, context="Get submission asset URL",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Dataviews
+# ---------------------------------------------------------------------------
+
+
+def create_dataview(solution_id: str, name: str, query: dict, access_token: str,
+                    slug: Optional[str] = None, description: Optional[str] = None,
+                    API_URL: str = DEFAULT_API_URL) -> dict:
+    """Create a dataview. `query` is the same shape as an insight query
+    (version/mode/sqlEditor/queryBuilder); in SQL, reference datasets by bare
+    id in double quotes: SELECT * FROM "ds_abc"."""
+    params = {"solutionId": solution_id, "name": name, "query": query,
+              "description": description}
+    if slug is not None:
+        params["slug"] = slug
+    return rpc_call("dataview", "createDataview", params,
+                    access_token=access_token, API_URL=API_URL,
+                    context="Create dataview")
+
+
+def update_dataview(dataview_id: str, access_token: str,
+                    API_URL: str = DEFAULT_API_URL, **kwargs) -> dict:
+    """Update name/slug/description. The definition changes via redefine_dataview."""
+    return rpc_call("dataview", "updateDataview", {"id": dataview_id, **kwargs},
+                    access_token=access_token, API_URL=API_URL,
+                    context="Update dataview")
+
+
+def redefine_dataview(dataview_id: str, query: dict, access_token: str,
+                      API_URL: str = DEFAULT_API_URL) -> dict:
+    return rpc_call("dataview", "redefineDataview",
+                    {"id": dataview_id, "query": query},
+                    access_token=access_token, API_URL=API_URL,
+                    context="Redefine dataview")
+
+
+def get_dataview(access_token: str, dataview_id: Optional[str] = None,
+                 solution_id: Optional[str] = None, slug: Optional[str] = None,
+                 API_URL: str = DEFAULT_API_URL) -> dict:
+    """Fetch by id, or by (solution_id, slug)."""
+    params = {"id": dataview_id} if dataview_id else              {"solutionId": solution_id, "slug": slug}
+    return rpc_call("dataview", "getDataview", params,
+                    access_token=access_token, API_URL=API_URL,
+                    context="Get dataview")
+
+
+def list_dataviews(solution_id: str, access_token: str,
+                   API_URL: str = DEFAULT_API_URL) -> list:
+    return rpc_call("dataview", "listDataviews", {"solutionId": solution_id},
+                    access_token=access_token, API_URL=API_URL,
+                    context="List dataviews")
+
+
+def delete_dataview(dataview_id: str, access_token: str,
+                    API_URL: str = DEFAULT_API_URL) -> dict:
+    return rpc_call("dataview", "deleteDataview", {"id": dataview_id},
+                    access_token=access_token, API_URL=API_URL,
+                    context="Delete dataview")
+
+
+def set_dataview_lock(dataview_id: str, locked: bool, access_token: str,
+                      API_URL: str = DEFAULT_API_URL) -> dict:
+    return rpc_call("dataview", "setDataviewLock",
+                    {"id": dataview_id, "locked": locked},
+                    access_token=access_token, API_URL=API_URL,
+                    context="Set dataview lock")
+
+
+# ---------------------------------------------------------------------------
+# DPA (Verzeichnis von Verarbeitungstätigkeiten)
+# ---------------------------------------------------------------------------
+
+
+def list_dpa_activities(solution_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> list:
+    """List the processing activities recorded for a solution."""
+    return rpc_call(
+        "dpa", "listActivities", {"solutionId": solution_id},
+        access_token=access_token, API_URL=API_URL, context="List DPA activities",
+    )
+
+
+def create_dpa_activity(
+    solution_id: str, data_type: str, person_group: str, purpose: str,
+    access_token: str, safety_measures: Optional[str] = None,
+    data_category: str = "none", API_URL: str = DEFAULT_API_URL,
+) -> dict:
+    """``data_category``: "none" | "art9" | "art10" | "both"."""
+    return rpc_call(
+        "dpa", "createActivity",
+        {"solutionId": solution_id, "dataType": data_type,
+         "personGroup": person_group, "purpose": purpose,
+         "safetyMeasures": safety_measures, "dataCategory": data_category},
+        access_token=access_token, API_URL=API_URL, context="Create DPA activity",
+    )
+
+
+def update_dpa_activity(
+    solution_id: str, activity_id: str, data_type: str, person_group: str,
+    purpose: str, access_token: str, safety_measures: Optional[str] = None,
+    data_category: str = "none", API_URL: str = DEFAULT_API_URL,
+) -> dict:
+    return rpc_call(
+        "dpa", "updateActivity",
+        {"solutionId": solution_id, "id": activity_id, "dataType": data_type,
+         "personGroup": person_group, "purpose": purpose,
+         "safetyMeasures": safety_measures, "dataCategory": data_category},
+        access_token=access_token, API_URL=API_URL, context="Update DPA activity",
+    )
+
+
+def delete_dpa_activity(solution_id: str, activity_id: str, access_token: str,
+                        API_URL: str = DEFAULT_API_URL) -> dict:
+    return rpc_call(
+        "dpa", "deleteActivity", {"solutionId": solution_id, "id": activity_id},
+        access_token=access_token, API_URL=API_URL, context="Delete DPA activity",
+    )
+
+
+def toggle_dpa_activity(solution_id: str, activity_id: str, access_token: str,
+                        API_URL: str = DEFAULT_API_URL) -> dict:
+    """Flip an activity between active and inactive."""
+    return rpc_call(
+        "dpa", "toggleActivity", {"solutionId": solution_id, "id": activity_id},
+        access_token=access_token, API_URL=API_URL, context="Toggle DPA activity",
+    )
+
+
+def set_dpa_activity_lock(solution_id: str, activity_id: str, locked: bool,
+                          access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
+    """Locked entries cannot be edited, deleted or toggled until unlocked."""
+    return rpc_call(
+        "dpa", "setActivityLock",
+        {"solutionId": solution_id, "id": activity_id, "locked": locked},
+        access_token=access_token, API_URL=API_URL, context="Set DPA activity lock",
+    )
+
+
+def record_dpa_acceptance(solution_id: str, access_token: str,
+                          context: Optional[str] = None,
+                          API_URL: str = DEFAULT_API_URL) -> dict:
+    """Record that the current user accepted the DPA terms for a solution."""
+    params = {"solutionId": solution_id}
+    if context is not None:
+        params["context"] = context
+    return rpc_call(
+        "dpa", "recordAcceptance", params,
+        access_token=access_token, API_URL=API_URL, context="Record DPA acceptance",
+    )
+
+
+def get_my_dpa_acceptance_status(solution_id: str, access_token: str,
+                                 API_URL: str = DEFAULT_API_URL) -> dict:
+    """Has the current user acknowledged the DPA terms for this solution?"""
+    return rpc_call(
+        "dpa", "getMyAcceptanceStatus", {"solutionId": solution_id},
+        access_token=access_token, API_URL=API_URL, context="Get DPA acceptance status",
     )
