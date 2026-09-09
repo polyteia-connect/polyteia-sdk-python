@@ -774,6 +774,24 @@ def list_workspaces(org_id: str, access_token: str, API_URL: str = DEFAULT_API_U
     )
 
 
+def archive_workspace(workspace_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
+    """Archive (delete) a workspace.
+
+    Lives on the ``enterprise/workspace`` router, unlike every other workspace
+    call, and takes ``workspaceId`` rather than the usual ``id``. The plain
+    ``workspace`` router answers 404 for this procedure **but still performs
+    it**, so do not probe there — a 404 from it is not proof that nothing
+    happened.
+
+    Archive the workspace's solutions first (:func:`delete_solution`); this
+    does not cascade.
+    """
+    return rpc_call(
+        "enterprise/workspace", "archiveWorkspace", {"workspaceId": workspace_id},
+        access_token=access_token, API_URL=API_URL, context="Archive workspace",
+    )
+
+
 def create_solution(workspace_id: str, name: str, description: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> str:
     """Create a solution and return its id."""
     sol = rpc_call(
@@ -888,16 +906,6 @@ def set_group_public_properties(
         access_token=access_token, API_URL=API_URL,
         context="Set group public properties",
     )
-
-
-def create_group(workspace_id: str, name: str, description: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> str:
-    """Create a group and return its id."""
-    group = rpc_call(
-        "group", "createGroup",
-        {"workspaceId": workspace_id, "name": name, "description": description},
-        access_token=access_token, API_URL=API_URL, context="Create group",
-    )
-    return group["id"]
 
 
 def list_groups(workspace_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> list:
