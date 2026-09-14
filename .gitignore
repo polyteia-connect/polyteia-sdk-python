@@ -14,7 +14,7 @@ dist/
 pip-log.txt
 
 # Virtual environments
-.env
+*.env
 .venv
 venv/
 ENV/

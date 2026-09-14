@@ -29,6 +29,16 @@ A lightweight Python SDK for interacting with the Polyteia API — designed for 
 pip install git+https://github.com/polyteia-connect/polyteia-sdk-python.git
 ```
 
+One install provides both API generations; the import name selects one:
+
+```python
+import polyteia_sdk as api            # current API
+import polyteia_sdk_python as api     # previous API (app.polyteia.com)
+```
+
+`polyteia_sdk_python_v2` is the same module as `polyteia_sdk` and remains
+importable; new code should use `polyteia_sdk`.
+
 ### Install locally for development
 
 ```bash
