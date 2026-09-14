@@ -7,7 +7,7 @@ def load_requirements(filename):
 
 setup(
     name="polyteia-sdk-python",
-    version="0.1.33",
+    version="0.1.34",
     packages=find_packages(),
     install_requires=load_requirements("requirements.txt"),
     extras_require={
