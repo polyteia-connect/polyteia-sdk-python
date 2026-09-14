@@ -116,6 +116,7 @@ from .api_utils import (
     # public properties
     set_workspace_public_properties,
     set_solution_public_properties,
+    get_group,
     set_group_public_properties,
     # membership & roles
     add_user_to_workspace,
@@ -262,6 +263,7 @@ __all__ = [
     "delete_group",
     "set_workspace_public_properties",
     "set_solution_public_properties",
+    "get_group",
     "set_group_public_properties",
     "add_user_to_workspace",
     "remove_user_from_workspace",

@@ -908,6 +908,14 @@ def set_group_public_properties(
     )
 
 
+def get_group(group_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
+    """Return a group, including its ``publicProperties``."""
+    return rpc_call(
+        "group", "getGroupById", {"id": group_id},
+        access_token=access_token, API_URL=API_URL, context="Get group",
+    )
+
+
 def list_groups(workspace_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> list:
     """List all groups in a workspace."""
     return rpc_call(
