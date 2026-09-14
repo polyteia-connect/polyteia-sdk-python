@@ -46,3 +46,8 @@ __pypackages__/
 # Testing
 gos_api_sdk/testing/
 .DS_Store
+
+# local env files
+.env
+.*.env
+*.env
