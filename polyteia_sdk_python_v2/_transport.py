@@ -29,6 +29,8 @@ DEFAULT_TIMEOUT = 60
 _MAX_RETRIES = 3
 _RETRY_BACKOFF_SECONDS = 1.0
 _RETRY_STATUS = {429, 500, 502, 503, 504}
+# Cap on an honoured Retry-After, so a long one cannot hang a pipeline.
+_MAX_RETRY_AFTER_SECONDS = 60.0
 
 
 class PolyteiaAPIError(Exception):
@@ -75,6 +77,50 @@ def _headers(access_token: Optional[str]) -> dict:
     return headers
 
 
+def _rewind(files) -> bool:
+    """Seek every file payload back to the start. False if one cannot be.
+
+    An upload body is consumed by the attempt that sent it, so without this a
+    retry posts an empty file and the server stores a truncated dataset.
+    """
+    for payload in _file_objects(files):
+        try:
+            payload.seek(0)
+        except (AttributeError, OSError, ValueError):
+            return False
+    return True
+
+
+def _file_objects(files):
+    """The file-like payloads in a requests ``files`` argument.
+
+    Accepts both shapes requests takes: a mapping or a list of pairs, each
+    value either the payload itself or a (filename, payload, content_type)
+    tuple. Bytes and strings need no rewinding and are skipped.
+    """
+    entries = files.values() if isinstance(files, dict) else [v for _, v in files or []]
+    for entry in entries:
+        payload = entry[1] if isinstance(entry, (tuple, list)) else entry
+        if hasattr(payload, "seek"):
+            yield payload
+
+
+def _retry_delay(response, attempt: int) -> float:
+    """Backoff before the next attempt, honouring ``Retry-After`` when sent.
+
+    A 429 carries the server's own wait; ignoring it retries into the same
+    rate limit and burns the remaining attempts.
+    """
+    backoff = _RETRY_BACKOFF_SECONDS * (2 ** attempt)
+    header = (getattr(response, "headers", None) or {}).get("Retry-After")
+    if header:
+        try:
+            return max(backoff, min(float(header), _MAX_RETRY_AFTER_SECONDS))
+        except (TypeError, ValueError):
+            pass    # a date-form Retry-After; the backoff stands
+    return backoff
+
+
 def _post_with_retry(url, *, headers, json_body, timeout, ctx, files=None, data=None):
     """POST with exponential-backoff retry on transient failures (5xx / 429 /
     connection errors). Deterministic 4xx responses are returned immediately for
@@ -82,6 +128,12 @@ def _post_with_retry(url, *, headers, json_body, timeout, ctx, files=None, data=
     with a transport error."""
     last_exc = None
     for attempt in range(_MAX_RETRIES):
+        if attempt and not _rewind(files):
+            # Better a clear error than a silently truncated upload.
+            raise PolyteiaAPIError(
+                f"{ctx} failed: cannot retry, the upload body is not rewindable",
+                body=str(last_exc),
+            )
         try:
             response = requests.post(
                 url, headers=headers, json=json_body, files=files, data=data, timeout=timeout
@@ -94,7 +146,7 @@ def _post_with_retry(url, *, headers, json_body, timeout, ctx, files=None, data=
             raise PolyteiaAPIError(f"{ctx} failed: request error: {exc}") from exc
 
         if response.status_code in _RETRY_STATUS and attempt < _MAX_RETRIES - 1:
-            time.sleep(_RETRY_BACKOFF_SECONDS * (2 ** attempt))
+            time.sleep(_retry_delay(response, attempt))
             continue
         return response
     # Unreachable, but keep type-checkers happy.
