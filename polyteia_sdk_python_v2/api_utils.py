@@ -473,11 +473,16 @@ def list_insights(solution_id: str, access_token: str, API_URL: str = DEFAULT_AP
 
 
 def get_insight_by_slug(solution_id: str, slug: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
-    """Get an insight by its slug within a solution."""
-    for insight in list_insights(solution_id, access_token, API_URL):
-        if insight.get("slug") == slug or insight.get("name") == slug:
-            return insight
-    raise PolyteiaAPIError(f"No insight with slug '{slug}' found in solution")
+    """Get an insight by slug within a solution.
+
+    Resolved by the API, like ``get_dataset_by_slug``. This used to scan
+    ``list_insights``, which returns an incomplete subset under load with no
+    way for a client to tell — so a slug that exists could be reported absent.
+    """
+    return rpc_call(
+        "insight", "getInsightBySolutionSlug", {"solutionId": solution_id, "slug": slug},
+        access_token=access_token, API_URL=API_URL, context="Get insight by slug",
+    )
 
 
 def delete_insight(insight_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
