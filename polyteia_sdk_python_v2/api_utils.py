@@ -473,14 +473,15 @@ def list_insights(solution_id: str, access_token: str, API_URL: str = DEFAULT_AP
 
 
 def get_insight_by_slug(solution_id: str, slug: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
-    """Get an insight by slug within a solution.
+    """Get an insight by its solution-scoped slug.
 
-    Resolved by the API, like ``get_dataset_by_slug``. This used to scan
-    ``list_insights``, which returns an incomplete subset under load with no
-    way for a client to tell — so a slug that exists could be reported absent.
+    Resolved by the API in one call. Raises ``PolyteiaAPIError`` with status
+    404 when no insight in the solution has that slug, and 403 when one does
+    but the caller may not view it.
     """
+    # getInsight takes either {id} or {solutionId, slug}.
     return rpc_call(
-        "insight", "getInsightBySolutionSlug", {"solutionId": solution_id, "slug": slug},
+        "insight", "getInsight", {"solutionId": solution_id, "slug": slug},
         access_token=access_token, API_URL=API_URL, context="Get insight by slug",
     )
 
