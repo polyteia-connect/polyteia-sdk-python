@@ -473,11 +473,17 @@ def list_insights(solution_id: str, access_token: str, API_URL: str = DEFAULT_AP
 
 
 def get_insight_by_slug(solution_id: str, slug: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
-    """Get an insight by its slug within a solution."""
-    for insight in list_insights(solution_id, access_token, API_URL):
-        if insight.get("slug") == slug or insight.get("name") == slug:
-            return insight
-    raise PolyteiaAPIError(f"No insight with slug '{slug}' found in solution")
+    """Get an insight by its solution-scoped slug.
+
+    Resolved by the API in one call. Raises ``PolyteiaAPIError`` with status
+    404 when no insight in the solution has that slug, and 403 when one does
+    but the caller may not view it.
+    """
+    # getInsight takes either {id} or {solutionId, slug}.
+    return rpc_call(
+        "insight", "getInsight", {"solutionId": solution_id, "slug": slug},
+        access_token=access_token, API_URL=API_URL, context="Get insight by slug",
+    )
 
 
 def delete_insight(insight_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> None:
