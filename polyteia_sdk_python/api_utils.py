@@ -1949,6 +1949,36 @@ def create_report_view(report_id, name, config, access_token, API_URL = DEFAULT_
     json_response = handle_api_response(response, context="Create report view")
     return json_response
 
+
+def sync_report_view(report_view_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
+    """Re-publish a report view, rebuilding its snapshot from the current report.
+
+    A view serves a snapshot of the report's structure, insight definitions and
+    filters - not the query results - so new data reaches readers without a sync.
+    Call this after changing the report itself, which is otherwise picked up only
+    when the platform re-syncs on its own.
+    """
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "command": "sync_report_view",
+        "params": {
+            "id": report_view_id
+        }
+    }
+
+    response = requests.post(
+        f"{API_URL}/api",
+        headers=headers,
+        json=payload
+    )
+
+    return handle_api_response(response, context="Sync report view")
+
+
 def update_dataset_source_timestamp(dataset_id: str, source_timestamp: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
     """
     Update the source timestamp of a dataset.

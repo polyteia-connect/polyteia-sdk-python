@@ -1427,6 +1427,32 @@ def manage_report_view_viewers(
     )
 
 
+def set_report_view_workspace_audience(
+    report_view_id: str, audience: str, access_token: str,
+    API_URL: str = DEFAULT_API_URL,
+) -> dict:
+    """Set who in the workspace can open a report view.
+
+    ``audience`` is ``everybody`` or ``nobody``. A newly created view is
+    ``nobody``, so it stays invisible to the workspace until this is called -
+    the view exists and is correct, and no one there can open it.
+
+    Goes through ``manageReportViewViewers`` because ``updateReportView``
+    rejects the field; the empty add/remove lists leave the named viewers alone.
+    """
+    return rpc_call(
+        "reportView", "manageReportViewViewers",
+        {
+            "reportViewId": report_view_id,
+            "add": {"members": [], "groups": []},
+            "remove": {"members": [], "groups": []},
+            "workspaceAudience": audience,
+        },
+        access_token=access_token, API_URL=API_URL,
+        context="Set report view workspace audience",
+    )
+
+
 # ---------------------------------------------------------------------------
 # Member permission checks (organization-member scope)
 # ---------------------------------------------------------------------------

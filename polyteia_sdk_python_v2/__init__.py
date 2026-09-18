@@ -152,6 +152,7 @@ from .api_utils import (
     set_report_view_public_access,
     list_report_view_viewers,
     manage_report_view_viewers,
+    set_report_view_workspace_audience,
     # forms
     create_form,
     update_form,
@@ -294,6 +295,7 @@ __all__ = [
     "set_report_view_public_access",
     "list_report_view_viewers",
     "manage_report_view_viewers",
+    "set_report_view_workspace_audience",
     "create_form",
     "update_form",
     "list_forms",
