@@ -1551,6 +1551,14 @@ def delete_form(form_id: str, access_token: str, API_URL: str = DEFAULT_API_URL)
     )
 
 
+def set_form_lock(form_id: str, locked: bool, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
+    """Lock or unlock a form."""
+    return rpc_call(
+        "form", "setFormLock", {"id": form_id, "locked": locked},
+        access_token=access_token, API_URL=API_URL, context="Set form lock",
+    )
+
+
 def publish_form(form_id: str, schema_version_name: str, access_token: str, schema_version_description: Optional[str] = None, API_URL: str = DEFAULT_API_URL) -> dict:
     """Publish a form, creating a released form and a schema version."""
     params = {"id": form_id, "schemaVersionName": schema_version_name}
