@@ -142,6 +142,9 @@ def accept_org_invitation(invitation_id: str, access_token: str,
                           API_URL: str = DEFAULT_API_URL) -> dict:
     """Accept an organization or workspace invitation.
 
+    The platform no longer creates invitations: adding someone provisions them
+    directly (see invite_to_workspace), so there is normally nothing to accept.
+
     ``access_token`` must be an unscoped session (see get_user_access_token).
     This is a REST route, not RPC.
     """
@@ -177,14 +180,53 @@ def invite_to_organization(org_id: str, email: str, access_token: str,
 
 
 def invite_to_workspace(workspace_id: str, email: str, access_token: str,
-                        kind: str = "workspaceAdmin",
-                        API_URL: str = DEFAULT_API_URL) -> dict:
-    """Invite someone to a workspace. Accepting this grants org membership."""
+                        role: str = "admin", API_URL: str = DEFAULT_API_URL,
+                        kind: Optional[str] = None) -> dict:
+    """Add someone to a workspace by address (enterprise surface).
+
+    This provisions them there and then: the call writes their user row, their
+    organization ``member`` row and the workspace relation, so nothing is left
+    to accept. It is how a user becomes an organization member, which an
+    org-scoped token exchange requires. Repeating it for someone already there
+    re-grants and succeeds.
+
+    ``role`` is the workspace relation: ``"admin"``, ``"member"`` or ``"guest"``.
+    A workspace admin is implicitly a member. ``access_token`` may be unscoped:
+    the enterprise surface checks the user's permissions, not the token's org.
+
+    ``kind`` is the pre-0.1.38 parameter, accepted for compatibility.
+
+    Returns ``{outcome, memberId, joined}``; ``memberId`` is usable immediately.
+    """
+    if kind is not None:
+        legacy = {"workspaceAdmin": "admin", "workspaceMember": "member",
+                  "workspaceGuest": "guest"}
+        if kind not in legacy:
+            raise PolyteiaAPIError(f"Unknown workspace invitation kind: {kind!r}")
+        role = legacy[kind]
     return rpc_call(
         "enterprise", "workspace/inviteToWorkspace",
-        {"workspaceId": workspace_id, "email": email, "kind": kind},
-        access_token=access_token, API_URL=API_URL, context="Invite to workspace",
+        {"workspaceId": workspace_id, "email": email, "role": role},
+        access_token=access_token, API_URL=API_URL, context="Add to workspace",
     )
+
+
+def list_org_workspaces(org_id: str, access_token: str,
+                        include_archived: bool = False,
+                        API_URL: str = DEFAULT_API_URL) -> list:
+    """List an organization's workspaces as its administrator.
+
+    Unlike ``list_workspaces``, this works for an org admin who is not an
+    organization member — e.g. right after the org was created in the cockpit,
+    when no org-scoped token can be had yet. ``access_token`` may be unscoped.
+    Archived workspaces are left out unless ``include_archived``.
+    """
+    rows = rpc_call(
+        "enterprise", "workspace/listWorkspacesByOrganization",
+        {"organizationId": org_id},
+        access_token=access_token, API_URL=API_URL, context="List workspaces (admin)",
+    )
+    return [w for w in rows if include_archived or not w.get("deletedAt")]
 
 
 def delete_org(org_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
