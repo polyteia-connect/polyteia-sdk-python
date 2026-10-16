@@ -121,7 +121,7 @@ def _retry_delay(response, attempt: int) -> float:
     return backoff
 
 
-def _post_with_retry(url, *, headers, json_body, timeout, ctx, files=None, data=None):
+def _post_with_retry(url, *, headers, json_body, timeout, ctx, files=None, data=None, params=None):
     """POST with exponential-backoff retry on transient failures (5xx / 429 /
     connection errors). Deterministic 4xx responses are returned immediately for
     the caller to surface. Raises PolyteiaAPIError only if every attempt fails
@@ -136,7 +136,8 @@ def _post_with_retry(url, *, headers, json_body, timeout, ctx, files=None, data=
             )
         try:
             response = requests.post(
-                url, headers=headers, json=json_body, files=files, data=data, timeout=timeout
+                url, headers=headers, json=json_body, files=files, data=data,
+                params=params, timeout=timeout,
             )
         except requests.RequestException as exc:
             last_exc = exc
@@ -232,6 +233,7 @@ def rest_post(
     json_body: Optional[dict] = None,
     files: Optional[list] = None,
     data: Optional[dict] = None,
+    params: Optional[Any] = None,
     extra_headers: Optional[dict] = None,
     API_URL: str = DEFAULT_API_URL,
     context: Optional[str] = None,
@@ -250,6 +252,8 @@ def rest_post(
         json_body: JSON body (mutually exclusive with ``files``/``data``).
         files: ``requests`` files argument for multipart uploads.
         data: Form fields for multipart uploads.
+        params: Query string, as ``requests`` takes it (a list of pairs
+            repeats a key).
         extra_headers: Additional headers to merge in.
         API_URL: Base URL of the Polyteia API.
         context: Label for error messages.
@@ -271,7 +275,7 @@ def rest_post(
 
     response = _post_with_retry(
         url, headers=headers, json_body=json_body, files=files, data=data,
-        timeout=timeout, ctx=ctx,
+        params=params, timeout=timeout, ctx=ctx,
     )
 
     if response.status_code not in (200, 201, 204):

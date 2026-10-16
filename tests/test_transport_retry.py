@@ -32,7 +32,7 @@ def responder(monkeypatch, statuses, *, on_post=None):
     """Answer successive POSTs with `statuses`; record what was sent."""
     sent = []
 
-    def post(url, headers=None, json=None, files=None, data=None, timeout=None):
+    def post(url, headers=None, json=None, files=None, data=None, params=None, timeout=None):
         if on_post is not None:
             on_post(files)
         sent.append({"files": files, "json": json})
