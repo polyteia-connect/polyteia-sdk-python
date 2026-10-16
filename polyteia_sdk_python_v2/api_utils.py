@@ -12,7 +12,8 @@ Behavioural differences from the previous major version:
 """
 
 import io
-from typing import List, Optional
+import time
+from typing import List, Optional, Sequence
 
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -403,6 +404,25 @@ def update_dataset_source_timestamp(dataset_id: str, source_timestamp: str, acce
     )
 
 
+def set_dataset_partitioning(
+    ds_id: str, columns: Optional[Sequence[str]], access_token: str, API_URL: str = DEFAULT_API_URL,
+) -> dict:
+    """Partition a dataset by ``columns`` (coarsest first), or remove its
+    partitioning with ``None``. Existing data is not changed. Returns the
+    updated dataset."""
+    return rpc_call(
+        "dataset", "setDatasetPartitioning",
+        {"id": ds_id, "columns": list(columns) if columns is not None else None},
+        access_token=access_token, API_URL=API_URL, context="Set dataset partitioning",
+    )
+
+
+def get_dataset_partitioning(ds_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> Optional[List[str]]:
+    """Return a dataset's partition columns, or ``None`` when it is not
+    partitioned."""
+    return get_dataset_by_id(ds_id, access_token, API_URL).get("partitionColumns")
+
+
 def update_dataset_metadata(ds_id: str, columns: list, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
     """Update a dataset's column metadata. Returns the updated dataset."""
     return rpc_call(
@@ -421,27 +441,114 @@ def get_dataset_metadata_cols(ds_id: str, access_token: str, API_URL: str = DEFA
 # ---------------------------------------------------------------------------
 
 
-def upload_file(dataset_id: str, df: pa.Table, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
+WRITE_MODES = ("replace", "replace_partitions", "upsert")
+
+
+def upload_file(
+    dataset_id: str, df: pa.Table, access_token: str, API_URL: str = DEFAULT_API_URL,
+    mode: Optional[str] = None, key_columns: Optional[Sequence[str]] = None,
+) -> dict:
     """Upload an Arrow table to a dataset as its data.
 
     NOTE: the previous major version required a separately generated upload
     token as the first argument. The Polyteia API now accepts a direct
     multipart upload, so this takes the ``dataset_id`` instead. The Arrow table
     is written to Parquet in memory and posted as multipart form data.
+
+    ``mode`` is one of :data:`WRITE_MODES`; without it the upload replaces the
+    whole dataset. ``replace_partitions`` needs the dataset to be partitioned
+    (:func:`set_dataset_partitioning`), ``upsert`` needs ``key_columns``.
+
+    The ingest is asynchronous: the returned dict carries its ``ingestId``, to
+    pass to :func:`wait_for_dataset_ingest`.
     """
+    params = []
+    if mode is not None:
+        if mode not in WRITE_MODES:
+            raise PolyteiaAPIError(f"mode must be one of {WRITE_MODES}, got {mode!r}")
+        if isinstance(key_columns, str):
+            key_columns = [key_columns]
+        params = [("mode", mode)] + [("key", k) for k in key_columns or ()]
+        if mode != "replace":
+            _require_write_modes(dataset_id, access_token, API_URL)
+
     buffer = io.BytesIO()
     pq.write_table(df, buffer)
     buffer.seek(0)
     files = [("file", ("data.parquet", buffer, "application/vnd.apache.parquet"))]
     response = rest_post(
         f"/api/upload/dataset/{dataset_id}",
-        access_token=access_token, files=files, API_URL=API_URL,
+        access_token=access_token, files=files, params=params or None, API_URL=API_URL,
         context="Upload dataset data",
     )
     try:
         return response.json()
     except ValueError:
         return {}
+
+
+def _require_write_modes(dataset_id: str, access_token: str, API_URL: str) -> None:
+    """Refuse a partial upload unless the API understands write modes.
+
+    An API that predates them ignores ``?mode=`` and would replace the whole
+    dataset with the partial file. Probing with an unknown mode and no file
+    sends no data: a current API refuses the mode (400), an older one the
+    missing multipart body (415).
+    """
+    try:
+        rest_post(
+            f"/api/upload/dataset/{dataset_id}",
+            access_token=access_token, params={"mode": "__probe__"}, API_URL=API_URL,
+            context="Check upload write modes",
+        )
+    except PolyteiaAPIError as exc:
+        if exc.status_code == 400 and "mode must be one of" in str(exc.body):
+            return
+        if exc.status_code == 415:
+            raise PolyteiaAPIError(
+                "This Polyteia API does not support upload write modes; it would "
+                "replace the whole dataset. Nothing was uploaded.",
+                status_code=415, body=exc.body,
+            ) from exc
+        raise
+    raise PolyteiaAPIError("Upload write-mode check got an unexpected success; nothing was uploaded.")
+
+
+def get_dataset_ingest_status(ds_id: str, ingest_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> dict:
+    """Return an upload's ingest status: ``{"status": "pending" | "running" |
+    "completed" | "failed", "errorMessage": ...}``."""
+    return rpc_call(
+        "dataset", "getDatasetIngestStatus", {"id": ds_id, "ingestId": ingest_id},
+        access_token=access_token, API_URL=API_URL, context="Get dataset ingest status",
+    )
+
+
+def wait_for_dataset_ingest(
+    ds_id: str, ingest_id: str, access_token: str, API_URL: str = DEFAULT_API_URL,
+    timeout: float = 3600, poll_interval: float = 2,
+) -> dict:
+    """Poll an ingest until it is ``completed`` and return its status.
+
+    Raises:
+        PolyteiaAPIError: when the ingest fails (a failed ingest changed no
+            data), or is still running after ``timeout`` seconds.
+    """
+    deadline = time.monotonic() + timeout
+    while True:
+        status = get_dataset_ingest_status(ds_id, ingest_id, access_token, API_URL)
+        if status["status"] == "completed":
+            return status
+        if status["status"] == "failed":
+            raise PolyteiaAPIError(
+                f"Ingest {ingest_id} of dataset {ds_id} failed: {status.get('errorMessage')}",
+                body=status,
+            )
+        if time.monotonic() >= deadline:
+            raise PolyteiaAPIError(
+                f"Ingest {ingest_id} of dataset {ds_id} still {status['status']} after {timeout}s",
+                body=status,
+            )
+        time.sleep(poll_interval)
 
 
 def generate_upload_token(ds_id: str, content_type: str, access_token: str, API_URL: str = DEFAULT_API_URL) -> str:
