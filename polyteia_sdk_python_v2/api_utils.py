@@ -243,6 +243,21 @@ def delete_org(org_id: str, access_token: str, API_URL: str = DEFAULT_API_URL) -
 # ---------------------------------------------------------------------------
 
 
+def _source_fields(source: str) -> dict:
+    """The dataset's free-text source under both names the API has used.
+
+    The current API calls it ``sourceNote`` (next to a new ``sourceType``),
+    the older one ``source``. Both drop keys they do not know, so sending the
+    value under both names works against either.
+    """
+    return {"source": source, "sourceNote": source}
+
+
+def _dataset_source(dataset: dict) -> str:
+    """A dataset's free-text source, from either API version."""
+    return dataset.get("sourceNote", dataset.get("source")) or ""
+
+
 def create_dataset(
     solution_id: str, name: str, description: str, source: str, slug: str,
     access_token: str, documentation: Optional[dict] = None,
@@ -253,7 +268,7 @@ def create_dataset(
         "name": name,
         "solutionId": solution_id,
         "description": description,
-        "source": source,
+        **_source_fields(source),
         "documentation": documentation or {},
     }
     if slug:
@@ -272,12 +287,16 @@ def create_dataset(
 def update_dataset(ds_id: str, access_token: str, API_URL: str = DEFAULT_API_URL, **kwargs) -> dict:
     """Update a dataset's mutable fields (``name``, ``slug``, ``description``,
     ``source``, ``dataAsOf``, ``documentation``). Returns the updated dataset.
+    The source is sent as both ``source`` and ``sourceNote``, so the call works
+    against either API version; given both, ``sourceNote`` is used.
 
     ``dataAsOf`` is required by the API (nullable); it defaults to ``None`` if
     not supplied. When set, pass an ISO-8601 string.
     """
     params = {"id": ds_id, "dataAsOf": None}
     params.update(kwargs)
+    if "source" in kwargs or "sourceNote" in kwargs:
+        params.update(_source_fields(kwargs.get("sourceNote", kwargs.get("source"))))
     return rpc_call(
         "dataset", "updateDataset", params,
         access_token=access_token, API_URL=API_URL, context="Update dataset",
@@ -385,7 +404,7 @@ def update_dataset_source_timestamp(dataset_id: str, source_timestamp: str, acce
     the updated dataset.
 
     ``updateDataset`` is a full-replacement update: it requires ``name``,
-    ``slug``, ``description``, ``source`` and ``documentation`` alongside the
+    ``slug``, ``description``, the source and ``documentation`` alongside the
     changed field. This reads the current dataset and re-sends those values.
     """
     # Accept a bare "YYYY-MM-DD" and expand to a full ISO timestamp, which the
@@ -399,7 +418,7 @@ def update_dataset_source_timestamp(dataset_id: str, source_timestamp: str, acce
         dataset_id, access_token, API_URL=API_URL,
         name=current["name"], slug=current["slug"],
         description=current.get("description") or "",
-        source=current["source"], documentation=current.get("documentation") or {},
+        source=_dataset_source(current), documentation=current.get("documentation") or {},
         dataAsOf=source_timestamp,
     )
 
